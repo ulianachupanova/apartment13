@@ -1847,19 +1847,6 @@ function buildApartment(isReturn) {
     addMesh(new THREE.BoxGeometry(0.07, 0.2, 0.07), legMat,  0.85, 0.1, -0.35, sofaGroup);
     colliders.push({ minX: -3.0, maxX: -1.0, minZ: -1.25, maxZ: -0.35 });
 
-    // Coffee Table between Sofa and TV Table
-    var ctGroup = new THREE.Group();
-    ctGroup.position.set(-2.0, 0, -1.65);
-    scene.add(ctGroup);
-    addMesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), makeMat(0x6b4a33), 0, 0.42, 0, ctGroup);
-    var ctLeg = new THREE.BoxGeometry(0.04, 0.40, 0.04);
-    addMesh(ctLeg, makeMat(0x4a3222), -0.38, 0.20, -0.20, ctGroup);
-    addMesh(ctLeg, makeMat(0x4a3222),  0.38, 0.20, -0.20, ctGroup);
-    addMesh(ctLeg, makeMat(0x4a3222), -0.38, 0.20,  0.20, ctGroup);
-    addMesh(ctLeg, makeMat(0x4a3222),  0.38, 0.20,  0.20, ctGroup);
-    addMesh(new THREE.BoxGeometry(0.24, 0.015, 0.32), makeMat(0xd97706), 0.05, 0.45, 0, ctGroup);
-    colliders.push({ minX: -2.5, maxX: -1.5, minZ: -1.95, maxZ: -1.35 });
-
     // Bookshelf on wall above sofa
     var shelfGroup = new THREE.Group();
     shelfGroup.position.set(-2.0, 1.85, -0.42);
@@ -1882,27 +1869,34 @@ function buildApartment(isReturn) {
     addMesh(new THREE.BoxGeometry(0.01, 0.09, 0.005), makeMat(0x111111), 0, 0.04, 0.018, clockGroup);
     addMesh(new THREE.BoxGeometry(0.06, 0.01, 0.005), makeMat(0x111111), 0.025, 0, 0.018, clockGroup);
 
-    // ==================== KITCHEN DINING TABLE & CHAIRS ====================
+    // ==================== TABLE BESIDE SOFA (СТОЛИК РЯДОМ С ДИВАНОМ НА КРАЮ) ====================
     var tableGroup = new THREE.Group();
-    tableGroup.position.set(-2.2, 0, 1.95);
+    tableGroup.position.set(-0.60, 0, -0.80);
     scene.add(tableGroup);
 
     var tableBaseMat = makeMat(0x3d2817);
     var tableTopMat = makeMat(0xdedad2);
     var tableLegMat = makeMat(0x2d1a0e);
-    addMesh(new THREE.BoxGeometry(0.90, 0.05, 0.75), tableTopMat, 0, 0.85, 0, tableGroup);
-    addMesh(new THREE.BoxGeometry(0.80, 0.06, 0.65), tableBaseMat, 0, 0.80, 0, tableGroup);
+    // Tabletop & frame
+    addMesh(new THREE.BoxGeometry(0.80, 0.05, 0.70), tableTopMat, 0, 0.85, 0, tableGroup);
+    addMesh(new THREE.BoxGeometry(0.72, 0.06, 0.62), tableBaseMat, 0, 0.80, 0, tableGroup);
+    // 4 legs
     var legGeo = new THREE.BoxGeometry(0.05, 0.82, 0.05);
-    addMesh(legGeo, tableLegMat, -0.36, 0.41, -0.29, tableGroup);
-    addMesh(legGeo, tableLegMat,  0.36, 0.41, -0.29, tableGroup);
-    addMesh(legGeo, tableLegMat, -0.36, 0.41,  0.29, tableGroup);
-    addMesh(legGeo, tableLegMat,  0.36, 0.41,  0.29, tableGroup);
-    colliders.push({ minX: -2.70, maxX: -1.70, minZ: 1.55, maxZ: 2.35 });
+    addMesh(legGeo, tableLegMat, -0.32, 0.41, -0.27, tableGroup);
+    addMesh(legGeo, tableLegMat,  0.32, 0.41, -0.27, tableGroup);
+    addMesh(legGeo, tableLegMat, -0.32, 0.41,  0.27, tableGroup);
+    addMesh(legGeo, tableLegMat,  0.32, 0.41,  0.27, tableGroup);
+
+    // Magazine and ceramic coffee mug on the table
+    addMesh(new THREE.BoxGeometry(0.24, 0.015, 0.32), makeMat(0xd97706), 0.12, 0.885, 0.05, tableGroup);
+    addMesh(new THREE.CylinderGeometry(0.04, 0.035, 0.10, 12), makeMat(0xf8fafc), -0.18, 0.925, -0.10, tableGroup);
+
+    colliders.push({ minX: -1.05, maxX: -0.15, minZ: -1.20, maxZ: -0.40 });
     gameState.apartmentTableGroup = tableGroup;
 
-    // 2 Wooden Kitchen Chairs tucked at table
+    // Wooden Chair tucked neatly at the table
     var chair1 = new THREE.Group();
-    chair1.position.set(-2.2, 0, 1.52);
+    chair1.position.set(-0.60, 0, -0.36);
     scene.add(chair1);
     addMesh(new THREE.BoxGeometry(0.40, 0.04, 0.38), makeMat(0x451a03), 0, 0.46, 0, chair1);
     addMesh(new THREE.BoxGeometry(0.36, 0.02, 0.34), makeMat(0x1e3a8a), 0, 0.48, 0, chair1);
@@ -1911,20 +1905,7 @@ function buildApartment(isReturn) {
     addMesh(cLegGeo, makeMat(0x451a03),  0.16, 0.23, -0.15, chair1);
     addMesh(cLegGeo, makeMat(0x451a03), -0.16, 0.23,  0.15, chair1);
     addMesh(cLegGeo, makeMat(0x451a03),  0.16, 0.23,  0.15, chair1);
-    // Backrest
-    addMesh(new THREE.BoxGeometry(0.38, 0.42, 0.03), makeMat(0x451a03), 0, 0.70, -0.16, chair1);
-
-    var chair2 = new THREE.Group();
-    chair2.position.set(-2.2, 0, 2.38);
-    chair2.rotation.y = Math.PI;
-    scene.add(chair2);
-    addMesh(new THREE.BoxGeometry(0.40, 0.04, 0.38), makeMat(0x451a03), 0, 0.46, 0, chair2);
-    addMesh(new THREE.BoxGeometry(0.36, 0.02, 0.34), makeMat(0x1e3a8a), 0, 0.48, 0, chair2);
-    addMesh(cLegGeo, makeMat(0x451a03), -0.16, 0.23, -0.15, chair2);
-    addMesh(cLegGeo, makeMat(0x451a03),  0.16, 0.23, -0.15, chair2);
-    addMesh(cLegGeo, makeMat(0x451a03), -0.16, 0.23,  0.15, chair2);
-    addMesh(cLegGeo, makeMat(0x451a03),  0.16, 0.23,  0.15, chair2);
-    addMesh(new THREE.BoxGeometry(0.38, 0.42, 0.03), makeMat(0x451a03), 0, 0.70, -0.16, chair2);
+    addMesh(new THREE.BoxGeometry(0.38, 0.42, 0.03), makeMat(0x451a03), 0, 0.70, 0.16, chair1);
 
     // ==================== KITCHEN STOVE & UPPER CABINETS ====================
     var stoveGroup = new THREE.Group();
@@ -2006,9 +1987,10 @@ function buildApartment(isReturn) {
     addMesh(new THREE.BoxGeometry(0.02, 0.12, 0.02), tubChromeMat,  0.06, -0.12, -0.19, kitchenCab);
 
     // ==================== KITCHEN FRIDGE ====================
+    // Turned to the right: back against front wall (z=3.0), front door facing into room (-z)
     var fridgeGroup = new THREE.Group();
-    fridgeGroup.position.set(-2.55, 0, 2.70);
-    fridgeGroup.rotation.y = Math.PI / 2;
+    fridgeGroup.position.set(-2.35, 0, 2.45);
+    fridgeGroup.rotation.y = Math.PI;
     scene.add(fridgeGroup);
 
     var fi = makeMat(0xdddddd);
@@ -2027,11 +2009,13 @@ function buildApartment(isReturn) {
     fDoorGroup.position.set(0.6, 0, 0.5);
     fridgeGroup.add(fDoorGroup);
     var fDoor = addMesh(new THREE.BoxGeometry(1.2, 2.2, 0.1), whiteMat, -0.6, 1.1, 0.05, fDoorGroup);
+    // Vertical chrome handle on fridge door
+    addMesh(new THREE.CylinderGeometry(0.015, 0.015, 0.45, 8), tubChromeMat, -1.12, 1.15, 0.12, fDoorGroup);
     fDoor.userData = { name: 'Холодильник', type: 'fridge', hingeGroup: fDoorGroup, isOpen: false, animating: false };
     interactables.push(fDoor);
     gameState.apartmentFridgeGroup = fridgeGroup;
     gameState.apartmentFridgeDoor = fDoor;
-    colliders.push({ minX: -2.95, maxX: -2.00, minZ: 2.10, maxZ: 3.00 });
+    colliders.push({ minX: -2.95, maxX: -1.75, minZ: 1.90, maxZ: 3.00 });
 
     // ==================== BATHROOM ROOM (ВАННАЯ КОМНАТА) ====================
     var bathFloorMat = new THREE.MeshLambertMaterial({ color: 0xc7d0da, map: getBathroomFloorTexture() });
@@ -3472,7 +3456,7 @@ function spawnDeliveryPackage() {
     playKnock();
 
     var pkgGroup = new THREE.Group();
-    pkgGroup.position.set(-2.5, 0.875, 0.70);
+    pkgGroup.position.set(-0.60, 0.875, -0.80);
     scene.add(pkgGroup);
 
     var craftMat = makeMat(0xc29b68);
@@ -3646,7 +3630,7 @@ function buildUnpackApartment() {
 
     // Supermarket grocery bag on the kitchen table
     var bagGroup = new THREE.Group();
-    bagGroup.position.set(-2.2, 0.875, 1.95);
+    bagGroup.position.set(-0.60, 0.875, -0.80);
     scene.add(bagGroup);
 
     var bagTex = createProceduralTexture(256, 256, function(cx, w, h) {
@@ -7758,7 +7742,7 @@ function handleInteraction(obj) {
                 setTimeout(function() {
                     if (gameState.chapter === 8) {
                         spawnDeliveryPackage();
-                        showThought('Стук в дверь! Курьер быстро оставил заказ на кухонном столике и убежал.');
+                        showThought('Стук в дверь! Курьер быстро оставил заказ на столике и убежал.');
                         setObjective('Съешь еду из доставки или включи телевизор');
                     }
                 }, 2500);
