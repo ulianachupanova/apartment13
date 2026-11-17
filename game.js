@@ -1333,7 +1333,9 @@ function loadChapter(n) {
         buildApartment(false);
         showChapterCard('ГЛАВА 1', 'Пробуждение', function() {
             controls.lock();
-            camera.position.set(2.35, 0.85, -1.0);
+            camera.position.set(1.0, 1.10, -1.0);
+            camera.lookAt(0, 1.4, 0.5);
+            camera.rotation.z = 0;
             var t = setInterval(function() {
                 camera.position.y += 0.04;
                 if (camera.position.y >= 1.6) {
@@ -1368,7 +1370,9 @@ function loadChapter(n) {
         buildMorning();
         showChapterCard('ГЛАВА 6', 'Доброе утро', function() {
             controls.lock();
-            camera.position.set(2.35, 0.85, -1.0);
+            camera.position.set(1.0, 1.10, -1.0);
+            camera.lookAt(0, 1.4, 0.5);
+            camera.rotation.z = 0;
             var t = setInterval(function() {
                 camera.position.y += 0.04;
                 if (camera.position.y >= 1.6) {
@@ -2823,7 +2827,9 @@ function buildApartment(isReturn) {
 
         chapterUpdate = function() {};
     } else {
-        camera.position.set(2.35, 0.85, -1.0);
+        camera.position.set(1.0, 1.6, -1.0);
+        camera.lookAt(0, 1.4, 0.5);
+        camera.rotation.z = 0;
     }
 }
 
@@ -8165,8 +8171,11 @@ function handleInteraction(obj) {
             if (!gameState.sleptChapter8) {
                 gameState.sleptChapter8 = true;
                 showThought('Ложусь поспать... Главное — никому не открывать дверь.');
-                camera.position.set(2.35, 0.85, -1.0);
+                camera.position.set(1.0, 1.10, -1.0);
                 startSleep(5, function() {
+                    camera.position.set(1.0, 1.10, -1.0);
+                    camera.lookAt(0, 1.4, 0.5);
+                    camera.rotation.z = 0;
                     var t = setInterval(function() {
                         camera.position.y += 0.04;
                         if (camera.position.y >= 1.6) {
@@ -8180,8 +8189,11 @@ function handleInteraction(obj) {
                 });
             } else {
                 showThought('Ложусь вздремнуть...');
-                camera.position.set(2.35, 0.85, -1.0);
+                camera.position.set(1.0, 1.10, -1.0);
                 startSleep(5, function() {
+                    camera.position.set(1.0, 1.10, -1.0);
+                    camera.lookAt(0, 1.4, 0.5);
+                    camera.rotation.z = 0;
                     var t2 = setInterval(function() {
                         camera.position.y += 0.04;
                         if (camera.position.y >= 1.6) {
