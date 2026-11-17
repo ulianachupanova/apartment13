@@ -1680,14 +1680,14 @@ function buildApartment(isReturn) {
 
     // Coat Rack by the entrance door
     var coatRackGroup = new THREE.Group();
-    coatRackGroup.position.set(-0.95, 1.6, 2.96);
+    coatRackGroup.position.set(-0.80, 1.6, 2.96);
     scene.add(coatRackGroup);
-    addMesh(new THREE.BoxGeometry(0.60, 0.16, 0.02), woodMat, 0, 0, 0, coatRackGroup);
-    for (var hk = -0.22; hk <= 0.22; hk += 0.11) {
+    addMesh(new THREE.BoxGeometry(0.44, 0.16, 0.02), woodMat, 0, 0, 0, coatRackGroup);
+    for (var hk = -0.16; hk <= 0.16; hk += 0.08) {
         addMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.06, 6), tubChromeMat, hk, 0, 0.03, coatRackGroup).rotation.x = Math.PI / 4;
     }
     // Winter coat hanging
-    addMesh(new THREE.BoxGeometry(0.32, 0.72, 0.12), makeMat(0x1e293b), 0.11, -0.38, 0.06, coatRackGroup);
+    addMesh(new THREE.BoxGeometry(0.28, 0.72, 0.12), makeMat(0x1e293b), 0.08, -0.38, 0.06, coatRackGroup);
 
     // ==================== WINDOW & CURTAINS ====================
     var fm = makeMat(0x3e2723);
@@ -1976,15 +1976,26 @@ function buildApartment(isReturn) {
     gameState.stoveLight = stoveLight;
     gameState.stovePanGroup = panGroup;
 
-    // Upper Kitchen Cabinets on front wall above stove
+    // Upper Kitchen Cabinet & Shelf on front wall above stove (aligned with stove, zero clipping with fridge)
     var kitchenCab = new THREE.Group();
-    kitchenCab.position.set(-1.35, 2.2, 2.82);
+    kitchenCab.position.set(-1.35, 2.20, 2.83);
     scene.add(kitchenCab);
-    addMesh(new THREE.BoxGeometry(1.2, 0.65, 0.34), makeMat(0xf0ede6), 0, 0, 0, kitchenCab);
-    addMesh(new THREE.BoxGeometry(0.56, 0.61, 0.02), makeMat(0xe2e8f0), -0.29, 0, -0.17, kitchenCab);
-    addMesh(new THREE.BoxGeometry(0.56, 0.61, 0.02), makeMat(0xe2e8f0),  0.29, 0, -0.17, kitchenCab);
-    addMesh(new THREE.BoxGeometry(0.02, 0.12, 0.02), tubChromeMat, -0.06, -0.12, -0.19, kitchenCab);
-    addMesh(new THREE.BoxGeometry(0.02, 0.12, 0.02), tubChromeMat,  0.06, -0.12, -0.19, kitchenCab);
+    var cabBodyMat = makeMat(0xf1f5f9);
+    var cabDoorMat = makeMat(0xe2e8f0);
+    // Main cabinet body (width 0.68 matches stove width 0.67, leaves 6cm gap to fridge at x=-1.75)
+    addMesh(new THREE.BoxGeometry(0.68, 0.65, 0.32), cabBodyMat, 0, 0, 0, kitchenCab);
+    // Two cabinet doors
+    addMesh(new THREE.BoxGeometry(0.31, 0.59, 0.02), cabDoorMat, -0.165, 0, -0.16, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.31, 0.59, 0.02), cabDoorMat,  0.165, 0, -0.16, kitchenCab);
+    // Chrome handles
+    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat, -0.035, -0.10, -0.18, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat,  0.035, -0.10, -0.18, kitchenCab);
+    // Lower shelf trim under cabinet
+    addMesh(new THREE.BoxGeometry(0.68, 0.025, 0.16), makeMat(0xd4d4d8), 0, -0.34, -0.08, kitchenCab);
+    // Decorative spice jars on the shelf
+    addMesh(new THREE.CylinderGeometry(0.02, 0.02, 0.06, 8), makeMat(0xd97706), -0.22, -0.30, -0.08, kitchenCab);
+    addMesh(new THREE.CylinderGeometry(0.02, 0.02, 0.06, 8), makeMat(0x059669), -0.14, -0.30, -0.08, kitchenCab);
+    addMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.07, 8), makeMat(0xf8fafc), 0.18, -0.295, -0.08, kitchenCab);
 
     // ==================== KITCHEN FRIDGE ====================
     // Turned to the right: back against front wall (z=3.0), front door facing into room (-z)
