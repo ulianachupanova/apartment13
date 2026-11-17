@@ -2131,3 +2131,285 @@ canvas {
 .mc-btn-respawn:hover {
     background: #16a34a;
 }
+
+
+/* ==================== 1C: ПРЕДПРИЯТИЕ 7.7 ==================== */
+.onec-header {
+    background: linear-gradient(90deg, #d97706, #b45309);
+}
+
+.onec-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #dfdfdf;
+    padding: 3px 6px;
+    border-bottom: 1px solid #808080;
+    font-size: 11px;
+}
+
+.onec-tool-btn {
+    background: #ece9d8;
+    border: 1px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 2px 7px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.onec-tool-btn:active {
+    border-color: #808080 #ffffff #ffffff #808080;
+}
+
+.onec-tool-sep {
+    color: #999999;
+    margin: 0 4px;
+}
+
+.onec-tool-info {
+    color: #4b5563;
+    font-size: 10px;
+    font-family: monospace;
+}
+
+.onec-tab-bar {
+    display: flex;
+    background: #d4d0c8;
+    border-bottom: 1px solid #808080;
+    padding: 4px 6px 0 6px;
+    gap: 4px;
+}
+
+.onec-tab {
+    background: #c0c0c0;
+    border: 1px solid #808080;
+    border-bottom: none;
+    padding: 5px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    font-family: 'PT Mono', monospace, sans-serif;
+    color: #374151;
+}
+
+.onec-tab.active {
+    background: #fdf6e2;
+    border-color: #b45309;
+    border-bottom: 1px solid #fdf6e2;
+    font-weight: bold;
+    color: #92400e;
+    margin-bottom: -1px;
+    z-index: 2;
+}
+
+.onec-tab.pulse-tab {
+    animation: tabPulse 1.2s infinite;
+}
+
+@keyframes tabPulse {
+    0%, 100% { background: #fef08a; }
+    50% { background: #fde047; }
+}
+
+.onec-content {
+    background: #fdfbf7;
+    padding: 10px;
+    font-size: 12px;
+}
+
+.onec-box {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 12px;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.05);
+}
+
+.onec-box-title {
+    font-weight: bold;
+    color: #92400e;
+    font-size: 13px;
+    margin-bottom: 6px;
+    border-bottom: 2px solid #f59e0b;
+    padding-bottom: 4px;
+}
+
+.onec-box-desc {
+    color: #4b5563;
+    font-size: 11px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.onec-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.onec-form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.onec-label {
+    font-size: 11px;
+    color: #1f2937;
+    font-weight: bold;
+}
+
+.onec-input {
+    background: #fffbeb;
+    border: 1px solid #d97706;
+    border-radius: 3px;
+    padding: 6px 10px;
+    font-family: 'PT Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #111827;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.onec-input:focus {
+    border-color: #b45309;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+}
+
+.onec-input:disabled {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+    color: #4b5563;
+}
+
+.onec-actions {
+    margin-top: 10px;
+}
+
+.onec-btn-main {
+    background: linear-gradient(180deg, #f59e0b, #d97706);
+    color: #ffffff;
+    font-weight: bold;
+    border: 1px solid #b45309;
+    border-radius: 4px;
+    padding: 7px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.onec-btn-main:hover {
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+}
+
+.onec-btn-main:active {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.onec-status-box {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.onec-msg-success {
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+    color: #065f46;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.onec-msg-error {
+    background: #fef2f2;
+    border: 1px solid #ef4444;
+    color: #991b1b;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.onec-emp-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.onec-check-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.onec-check-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #1f2937;
+    line-height: 1.4;
+}
+
+.onec-check-label input {
+    margin-top: 2px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.onec-stamp {
+    border: 3px dashed #dc2626;
+    background: rgba(254, 226, 226, 0.65);
+    color: #991b1b;
+    padding: 10px 16px;
+    font-family: 'PT Mono', monospace;
+    font-weight: 900;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: block;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.15);
+}
+
+/* EXCEL LEDGER BOX */
+.excel-ledger-box {
+    margin-top: 14px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.excel-ledger-title {
+    font-weight: bold;
+    color: #0f766e;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.highlight-num-row {
+    background: #fefce8;
+}
+
+.excel-num-val {
+    font-family: 'PT Mono', monospace;
+    font-weight: bold;
+    font-size: 13px;
+    color: #1e3a8a;
+    letter-spacing: 0.5px;
+}
+
+.excel-ledger-tip {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #475569;
+}

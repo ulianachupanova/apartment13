@@ -73,6 +73,10 @@
 
                 <!-- Column 2: Work Applications -->
 
+                <div class="comp-icon" onclick="openCompApp('onec')">
+                    <div class="comp-icon-img" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-weight: 900; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 15px; box-shadow: inset 1px 1px 0 rgba(255,255,255,0.4);">1С</div>
+                    <div class="comp-icon-label">1С: Предприятие</div>
+                </div>
                 <div class="comp-icon" onclick="openCompApp('excel')">
                     <div class="comp-icon-img icon-excel">📈</div>
                     <div class="comp-icon-label">MS Excel</div>
@@ -257,6 +261,113 @@
                             <tr><td>4</td><td>Босс (Директор)</td><td>-</td><td>Эвакуация штаба</td><td>ЗА ГОРОДОМ</td></tr>
                         </tbody>
                     </table>
+
+                    <div class="excel-ledger-box">
+                        <div class="excel-ledger-title">📋 КОНТРОЛЬНАЯ ВЕДОМОСТЬ СВЕРКИ № 13/84 (ДЛЯ ПЕРЕНОСА В 1С)</div>
+                        <table class="table-excel">
+                            <thead>
+                                <tr><th>Параметр / Статья реестра</th><th>Контрольное число (Значение)</th><th>Примечание для оператора</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="highlight-num-row"><td>1. Регистрационный номер партии:</td><td class="excel-num-val">84920471853</td><td>11-значный номер реестра</td></tr>
+                                <tr class="highlight-num-row"><td>2. Сумма оборота по счетам:</td><td class="excel-num-val">14892045</td><td>Рубли (без копеек)</td></tr>
+                                <tr class="highlight-num-row"><td>3. Контрольный хеш-код сверки:</td><td class="excel-num-val">973160482</td><td>9-значный контрольный хеш</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="excel-ledger-tip">ℹ️ Откройте <strong>1С: Предприятие</strong> (желтый значок на рабочем столе) и перепишите эти числа вручную в форму сверки реестра.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WINDOW: 🟡 1С: ПРЕДПРИЯТИЕ 7.7 (#comp-win-onec) -->
+            <div id="comp-win-onec" class="comp-window" style="display: none; width: 680px; top: 10%; left: 20%;">
+                <div class="comp-win-header onec-header" onmousedown="startDragWindow(event, 'comp-win-onec')">
+                    <div class="comp-win-title">
+                        <span>🟡</span>
+                        <span>1С:Предприятие 7.7 - [Сверка реестра и Электронный табель]</span>
+                    </div>
+                    <div class="comp-win-controls">
+                        <button onclick="minimizeCompWindow('comp-win-onec')">_</button>
+                        <button onclick="closeCompApp('onec')">X</button>
+                    </div>
+                </div>
+                <div class="comp-win-menubar">
+                    <span>Операции</span><span>Справочники</span><span>Документы</span><span>Журналы</span><span>Отчеты</span><span>Сервис</span><span>Помощь</span>
+                </div>
+                <div class="onec-toolbar">
+                    <button class="onec-tool-btn" onclick="openCompApp('excel')">📊 Открыть Excel</button>
+                    <button class="onec-tool-btn" onclick="openCompApp('report')">📄 Открыть Отчет_13</button>
+                    <button class="onec-tool-btn" onclick="openCompApp('calc')">🧮 Калькулятор</button>
+                    <span class="onec-tool-sep">|</span>
+                    <span class="onec-tool-info">База: БУХГАЛТЕРИЯ_ГЛАВК_2026.DBF</span>
+                </div>
+                <div class="onec-tab-bar">
+                    <button id="onec-tab-1" class="onec-tab active" onclick="switchOneCTab('reconcile')">📊 1. Сверка реестра (Большие числа)</button>
+                    <button id="onec-tab-2" class="onec-tab" onclick="switchOneCTab('attendance')">📋 2. Электронный табель и готовность</button>
+                </div>
+                <div class="comp-win-content onec-content">
+                    <!-- VIEW 1: RECONCILE NUMBERS -->
+                    <div id="onec-view-1" class="onec-view">
+                        <div class="onec-box">
+                            <div class="onec-box-title">СВЕРКА ФИСКАЛЬНОГО РЕЕСТРА ЗА 13 ДЕКАБРЯ</div>
+                            <p class="onec-box-desc">Внимание: перепишите 3 больших контрольных числа из <strong>Microsoft Excel</strong> (файл <em>График_Дежурств / Ведомость</em>) в поля ниже для фиксации реестра:</p>
+                            
+                            <div class="onec-form-grid">
+                                <div class="onec-form-row">
+                                    <label class="onec-label" for="onec-input-reg">1. Регистрационный номер партии (11 цифр):</label>
+                                    <input type="text" id="onec-input-reg" class="onec-input" placeholder="Введите 11 цифр из Excel..." autocomplete="off">
+                                </div>
+                                <div class="onec-form-row">
+                                    <label class="onec-label" for="onec-input-sum">2. Сумма оборота по счетам (руб.):</label>
+                                    <input type="text" id="onec-input-sum" class="onec-input" placeholder="Введите сумму из Excel..." autocomplete="off">
+                                </div>
+                                <div class="onec-form-row">
+                                    <label class="onec-label" for="onec-input-hash">3. Контрольный хеш-код сверки (9 цифр):</label>
+                                    <input type="text" id="onec-input-hash" class="onec-input" placeholder="Введите 9 цифр из Excel..." autocomplete="off">
+                                </div>
+                            </div>
+
+                            <div class="onec-actions">
+                                <button id="onec-btn-reconcile" class="onec-btn-main" onclick="verifyOneCNumbers()">🔍 СВЕРИТЬ И ПРОВЕРИТЬ В 1С</button>
+                            </div>
+                            <div id="onec-status-reconcile" class="onec-status-box"></div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 2: TIME & ATTENDANCE -->
+                    <div id="onec-view-2" class="onec-view" style="display: none;">
+                        <div class="onec-box">
+                            <div class="onec-box-title">ТАБЕЛЬ УЧЕТА РАБОЧЕГО ВРЕМЕНИ И СМЕН (ФОРМА Т-13)</div>
+                            <p class="onec-box-desc">Подтвердите своё присутствие на смене и готовность к следующей смене:</p>
+
+                            <div class="onec-emp-card">
+                                <div><strong>Сотрудник:</strong> Смирнов Иван Алексеевич (Таб. № 013-ОП)</div>
+                                <div><strong>Должность:</strong> Дежурный ночной оператор мониторинга</div>
+                                <div><strong>Дата смены:</strong> Пятница, 13 декабря (20:00 - 08:00)</div>
+                            </div>
+
+                            <div class="onec-check-group">
+                                <label class="onec-check-label">
+                                    <input type="checkbox" id="onec-check-present">
+                                    <span><strong>Подтверждаю: я был на смене</strong> и выполнил все поставленные задачи дежурства 13 декабря.</span>
+                                </label>
+                                <label class="onec-check-label">
+                                    <input type="checkbox" id="onec-check-ready-tomorrow">
+                                    <span><strong>Подтверждаю: готов выйти на работу на следующий день</strong> (суббота, 14 декабря) в установленное время.</span>
+                                </label>
+                            </div>
+
+                            <div class="onec-actions">
+                                <button id="onec-btn-sign" class="onec-btn-main" onclick="signAttendance()">✍️ ПОСТАВИТЬ ОТМЕТКУ И ЗАКРЫТЬ СМЕНУ</button>
+                            </div>
+                            <div id="onec-status-attendance" class="onec-status-box"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="comp-win-statusbar">
+                    <span>Пользователь: СМИРНОВ И.А.</span>
+                    <span>Конфигурация: 1С:Бухгалтерия 7.7</span>
+                    <span>Сервер: ОНЛАЙН (ЛОКАЛЬНО)</span>
                 </div>
             </div>
 
@@ -501,6 +612,7 @@
                     <div class="start-item highlight-rb" onclick="openCompApp('roblox')"><span>🟥</span> Roblox Player</div>
                     <div class="start-divider"></div>
 
+                    <div class="start-item" onclick="openCompApp('onec')"><span style="color:#d97706; font-weight:bold;">🟡</span> 1С: Предприятие 7.7</div>
                     <div class="start-item" onclick="openCompApp('excel')"><span>📈</span> MS Excel</div>
                     <div class="start-item" onclick="openCompApp('browser')"><span>🌐</span> Internet Explorer</div>
                     <div class="start-item" onclick="openCompApp('mail')"><span>✉️</span> Outlook Express</div>

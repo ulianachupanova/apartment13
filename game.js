@@ -112,6 +112,9 @@ var gameState = {
     finalTriggered: false,
     transitioning: false,
     computerUsed: false,
+    officeReportSubmitted: false,
+    officeReconciliationDone: false,
+    officeAttendanceSigned: false,
     stalkerSpawned: false,
     money: 5000,
     cart: [],
@@ -434,6 +437,42 @@ function playClickSound() {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.06);
+}
+
+function playSuccessChime() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var now = ctx.currentTime;
+    var notes = [523.25, 659.25, 783.99, 1046.50];
+    for (var i = 0; i < notes.length; i++) {
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(notes[i], now + i * 0.08);
+        g.gain.setValueAtTime(0.12, now + i * 0.08);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.36);
+    }
+}
+
+function playStampSound() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var now = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var g = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+    g.gain.setValueAtTime(0.35, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.22);
 }
 
 function playFootstep() {
@@ -7658,6 +7697,26 @@ function buildOffice() {
     scene.add(roomLight);
     gameState.lightOn = true;
 
+    // Reset office progression
+    gameState.officeReportSubmitted = false;
+    gameState.officeReconciliationDone = false;
+    gameState.officeAttendanceSigned = false;
+    gameState.computerUsed = false;
+    var inReg = document.getElementById('onec-input-reg'); if (inReg) { inReg.value = ''; inReg.disabled = false; }
+    var inSum = document.getElementById('onec-input-sum'); if (inSum) { inSum.value = ''; inSum.disabled = false; }
+    var inHash = document.getElementById('onec-input-hash'); if (inHash) { inHash.value = ''; inHash.disabled = false; }
+    var btnRec = document.getElementById('onec-btn-reconcile'); if (btnRec) { btnRec.disabled = false; btnRec.textContent = '🔍 ПРОВЕРИТЬ И СВЕРИТЬ В 1С'; }
+    var statRec = document.getElementById('onec-status-reconcile'); if (statRec) { statRec.textContent = ''; statRec.className = ''; }
+    var chkP = document.getElementById('onec-check-present'); if (chkP) { chkP.checked = false; chkP.disabled = false; }
+    var chkR = document.getElementById('onec-check-ready-tomorrow'); if (chkR) { chkR.checked = false; chkR.disabled = false; }
+    var btnS = document.getElementById('onec-btn-sign'); if (btnS) { btnS.disabled = false; btnS.style.display = 'inline-block'; }
+    var statAtt = document.getElementById('onec-status-attendance'); if (statAtt) { statAtt.textContent = ''; statAtt.className = ''; }
+    var subBtn = document.getElementById('comp-submit'); if (subBtn) { subBtn.disabled = false; subBtn.textContent = '💾 ОТПРАВИТЬ В ГЛАВК'; subBtn.style.background = ''; subBtn.style.color = ''; }
+    var cErr = document.getElementById('comp-error'); if (cErr) { cErr.textContent = ''; }
+    var cIn = document.getElementById('comp-input'); if (cIn) { cIn.value = ''; }
+    var tab2Btn = document.getElementById('onec-tab-2'); if (tab2Btn) { tab2Btn.classList.remove('pulse-tab'); }
+    if (window.switchOneCTab) window.switchOneCTab('reconcile');
+
     // Player initial spawn & camera orientation
     camera.position.set(-1.3, 1.6, -3.6);
     camera.lookAt(-1.3, 1.45, -5.2);
@@ -8333,10 +8392,14 @@ function handleInteraction(obj) {
         }
     }
     else if (d.type === 'colleague') {
-        if (!gameState.computerUsed) {
+        if (!gameState.officeReportSubmitted) {
             showThought('Михаил: "Ты тоже это слышишь за окном?.. Весь вечер сирены выли, а теперь тишина гробовая. Шеф свалил еще в пять, сказал закрыть всё. Доделывай свой отчёт и давай валить отсюда."');
+        } else if (!gameState.officeReconciliationDone) {
+            showThought('Михаил: "Отчет сдал? Отлично, теперь открой 1С на рабочем столе и перепиши туда большие контрольные числа из ведомости в Excel, а то бухгалтерия нас сожрёт."');
+        } else if (!gameState.officeAttendanceSigned) {
+            showThought('Михаил: "Числа сошлись? Красава! Теперь обязательно отметь в табеле 1С, что ты был сегодня и готов выйти на смену завтра, иначе смену не зачтут."');
         } else {
-            showThought('Михаил: "Отправил? Красава. Выходи первым, я пока сервер выключу и свет потушу. До завтра... если оно настанет."');
+            showThought('Михаил: "Всё сделал и табель подписал? Ну ты зверь! Выходи первым, я пока сервер выключу и свет потушу. До завтра... если оно настанет."');
         }
     }
     else if (d.type === 'other_computer') {
@@ -8362,10 +8425,14 @@ function handleInteraction(obj) {
         gameState.inUI = true;
         controls.unlock();
         document.getElementById('computer-ui').style.display = 'block';
-        if (!gameState.computerUsed) {
+        if (!gameState.officeReportSubmitted) {
             showThought('Нужно перепечатать отчет из желтой папки.');
+        } else if (!gameState.officeReconciliationDone) {
+            showThought('Отчет отправлен. Теперь нужно открыть 1С и переписать большие контрольные числа из Excel.');
+        } else if (!gameState.officeAttendanceSigned) {
+            showThought('Числа сверены в 1С. Осталось поставить отметку в табеле о явке и готовности на завтра.');
         } else {
-            showThought('Отчет отправлен, но компьютер еще включен.');
+            showThought('Вся работа выполнена, табель подписан. Можно закрывать ПК и идти к выходу.');
         }
     }
     else if (d.type === 'yellow_folder') {
@@ -8386,8 +8453,14 @@ function handleInteraction(obj) {
                 gameState.officeDoorOpening = false;
                 loadChapter(4);
             }, 1200);
-        } else {
+        } else if (!gameState.officeReportSubmitted) {
             showThought('Я не могу уйти, пока не отправлю отчет на компьютере!');
+        } else if (!gameState.officeReconciliationDone) {
+            showThought('Отчет отправлен, но я еще не переписал большие контрольные числа из Excel в 1С!');
+        } else if (!gameState.officeAttendanceSigned) {
+            showThought('Сверка чисел завершена, но нужно поставить отметку в табеле, что я был на смене и готов выйти завтра!');
+        } else {
+            showThought('Нужно завершить работу на компьютере!');
         }
     }
     else if (d.type === 'sofa') {
@@ -8685,7 +8758,8 @@ function getAppTitle(appId) {
         'mail': '✉️ Outlook Express',
         'calc': '🧮 Калькулятор',
         'notepad': '📝 Заметки',
-        'trash': '🗑️ Корзина'
+        'trash': '🗑️ Корзина',
+        'onec': '🟡 1С: Предприятие 7.7'
     };
     return titles[appId] || appId;
 }
@@ -9599,13 +9673,136 @@ function onCompDragEnd() {
         var input = document.getElementById('comp-input').value.trim();
         var expected = document.getElementById('folder-text').textContent.trim();
         if (input === expected) {
-            gameState.computerUsed = true;
-            window.closeComputerUI();
-            showThought('Отлично, отчет отправлен. Теперь можно идти домой.');
-            setObjective('Выйди из офиса');
+            gameState.officeReportSubmitted = true;
+            playSuccessChime();
+            var submitBtn = document.getElementById('comp-submit');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '✅ ОТЧЕТ ОТПРАВЛЕН В ГЛАВК';
+                submitBtn.style.background = '#15803d';
+                submitBtn.style.color = '#ffffff';
+            }
+            var errEl = document.getElementById('comp-error');
+            if (errEl) {
+                errEl.style.color = '#15803d';
+                errEl.innerHTML = '<strong>[1/3 ВЫПОЛНЕНО]</strong> Отчет принят сервером. Откройте <strong>1С: Предприятие</strong> для сверки чисел из Excel!';
+            }
+            showThought('Отчет № 13-Б принят сервером. Но работа еще не окончена: нужно открыть 1С и переписать большие контрольные числа из Excel, а затем поставить отметку в табеле!');
+            setObjective('Перенеси контрольные числа из Excel в 1С');
         } else {
             document.getElementById('comp-error').textContent = 'ОШИБКА: Текст не совпадает с оригиналом.';
         }
+    };
+
+    window.switchOneCTab = function(tabName) {
+        var tab1 = document.getElementById('onec-tab-1');
+        var tab2 = document.getElementById('onec-tab-2');
+        var view1 = document.getElementById('onec-view-1');
+        var view2 = document.getElementById('onec-view-2');
+        if (!tab1 || !tab2 || !view1 || !view2) return;
+
+        if (tabName === 'reconcile') {
+            tab1.classList.add('active');
+            tab2.classList.remove('active');
+            view1.style.display = 'block';
+            view2.style.display = 'none';
+        } else if (tabName === 'attendance') {
+            tab1.classList.remove('active');
+            tab2.classList.add('active');
+            view1.style.display = 'none';
+            view2.style.display = 'block';
+        }
+    };
+
+    window.verifyOneCNumbers = function() {
+        var val1 = (document.getElementById('onec-input-reg').value || '').replace(/\s+/g, '').trim();
+        var val2 = (document.getElementById('onec-input-sum').value || '').replace(/\s+/g, '').trim();
+        var val3 = (document.getElementById('onec-input-hash').value || '').replace(/\s+/g, '').trim();
+
+        var expected1 = '84920471853';
+        var expected2 = '14892045';
+        var expected3 = '973160482';
+
+        var statusEl = document.getElementById('onec-status-reconcile');
+        if (!statusEl) return;
+
+        if (!gameState.officeReportSubmitted) {
+            statusEl.className = 'onec-msg-error';
+            statusEl.textContent = 'ОШИБКА 1С: Сначала перепечатайте и отправьте Отчет_13.txt!';
+            playClickSound();
+            return;
+        }
+
+        if (val1 === expected1 && val2 === expected2 && val3 === expected3) {
+            gameState.officeReconciliationDone = true;
+            playSuccessChime();
+            statusEl.className = 'onec-msg-success';
+            statusEl.innerHTML = '✅ <strong>СВЕРКА УСПЕШНО ЗАВЕРШЕНА!</strong><br>Все контрольные числа совпали (расхождений 0). База 1С синхронизирована.<br>👉 Перейдите на вкладку <strong>«2. Электронный табель»</strong> для подтверждения явки и выхода завтра.';
+
+            var btnRec = document.getElementById('onec-btn-reconcile');
+            if (btnRec) {
+                btnRec.disabled = true;
+                btnRec.textContent = '✅ СВЕРКА ЗАВЕРШЕНА';
+            }
+            var regIn = document.getElementById('onec-input-reg'); if (regIn) regIn.disabled = true;
+            var sumIn = document.getElementById('onec-input-sum'); if (sumIn) sumIn.disabled = true;
+            var hashIn = document.getElementById('onec-input-hash'); if (hashIn) hashIn.disabled = true;
+
+            showThought('Отлично! Большие числа переписаны без ошибок, сверка в 1С прошла. Осталось поставить отметку в табеле, что я был на смене и готов выйти завтра.');
+            setObjective('Поставь отметку в табеле о явке и готовности на завтра');
+
+            var tab2Btn = document.getElementById('onec-tab-2');
+            if (tab2Btn) {
+                tab2Btn.classList.add('pulse-tab');
+            }
+        } else {
+            playClickSound();
+            statusEl.className = 'onec-msg-error';
+            var hints = [];
+            if (val1 !== expected1) hints.push('Рег. номер (ожидается 11 цифр из Excel)');
+            if (val2 !== expected2) hints.push('Сумма оборота (ожидается 8 цифр из Excel)');
+            if (val3 !== expected3) hints.push('Хеш-код (ожидается 9 цифр из Excel)');
+            statusEl.innerHTML = '❌ <strong>ОШИБКА СВЕРКИ 1С:</strong> Числа не сошлись!<br>Неверно введено: ' + hints.join(', ') + '. Откройте MS Excel и проверьте ведомость.';
+        }
+    };
+
+    window.signAttendance = function() {
+        var chkPresent = document.getElementById('onec-check-present');
+        var chkReady = document.getElementById('onec-check-ready-tomorrow');
+        var statusEl = document.getElementById('onec-status-attendance');
+        if (!chkPresent || !chkReady || !statusEl) return;
+
+        if (!gameState.officeReconciliationDone) {
+            statusEl.className = 'onec-msg-error';
+            statusEl.textContent = 'ОШИБКА: Сначала выполните сверку чисел на вкладке «1. Сверка реестра»!';
+            playClickSound();
+            return;
+        }
+
+        if (!chkPresent.checked || !chkReady.checked) {
+            statusEl.className = 'onec-msg-error';
+            statusEl.textContent = 'ВНИМАНИЕ: Необходимо отметить ОБА пункта: что вы БЫЛИ на смене и что ГОТОВЫ выйти на работу на следующий день!';
+            playClickSound();
+            return;
+        }
+
+        gameState.officeAttendanceSigned = true;
+        gameState.computerUsed = true;
+        playStampSound();
+
+        chkPresent.disabled = true;
+        chkReady.disabled = true;
+        var btnSign = document.getElementById('onec-btn-sign');
+        if (btnSign) {
+            btnSign.disabled = true;
+            btnSign.style.display = 'none';
+        }
+
+        statusEl.className = 'onec-msg-success';
+        statusEl.innerHTML = '<div class="onec-stamp">✓ СМЕНА СДАНА И ЗАКРЫТА<br>ЯВКА: ПОДТВЕРЖДЕНА (БЫЛ НА СМЕНЕ)<br>СЛЕДУЮЩИЙ ДЕНЬ: ГОТОВ К ВЫХОДУ НА РАБОТУ<br>ТАБЕЛЬ ПОДПИСАН: СМИРНОВ И.А. (13 ДЕКАБРЯ)</div>';
+
+        showThought('Вся работа выполнена: отчет сдан, числа переписаны в 1С, отметка о явке и готовности на завтра поставлена! Теперь можно закрыть компьютер и идти домой.');
+        setObjective('Выйди из офиса');
     };
 
     window.switchPhoneTab = function(tabName) {
