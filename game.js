@@ -1333,7 +1333,7 @@ function loadChapter(n) {
         buildApartment(false);
         showChapterCard('ГЛАВА 1', 'Пробуждение', function() {
             controls.lock();
-            camera.position.set(2.4, 0.8, -1.0);
+            camera.position.set(2.35, 0.85, -1.0);
             var t = setInterval(function() {
                 camera.position.y += 0.04;
                 if (camera.position.y >= 1.6) {
@@ -1368,7 +1368,7 @@ function loadChapter(n) {
         buildMorning();
         showChapterCard('ГЛАВА 6', 'Доброе утро', function() {
             controls.lock();
-            camera.position.set(2.4, 0.8, -1.0);
+            camera.position.set(2.35, 0.85, -1.0);
             var t = setInterval(function() {
                 camera.position.y += 0.04;
                 if (camera.position.y >= 1.6) {
@@ -1558,6 +1558,69 @@ function getBathroomMirrorTexture() {
     return cachedMirrorTex;
 }
 
+
+var cachedBedQuiltTex = null;
+function getQuiltedBedTexture() {
+    if (cachedBedQuiltTex) return cachedBedQuiltTex;
+    cachedBedQuiltTex = createProceduralTexture(512, 512, function(ctx, w, h) {
+        // Deep rich burgundy/wine base
+        ctx.fillStyle = '#6b101c';
+        ctx.fillRect(0, 0, w, h);
+
+        // Subtle fabric weave texture
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
+        for (var y = 0; y < h; y += 4) {
+            ctx.fillRect(0, y, w, 2);
+        }
+
+        // Quilted diamond lattice pattern
+        var step = 48;
+        ctx.lineWidth = 2.5;
+
+        // Diagonal lines \
+        for (var x = -w; x < w * 2; x += step) {
+            ctx.strokeStyle = '#3e060d'; // shadow groove
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x + h, h);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#991b2b'; // highlight stitch
+            ctx.beginPath();
+            ctx.moveTo(x + 1.5, 0);
+            ctx.lineTo(x + h + 1.5, h);
+            ctx.stroke();
+        }
+
+        // Diagonal lines /
+        for (var x2 = 0; x2 < w * 3; x2 += step) {
+            ctx.strokeStyle = '#3e060d'; // shadow groove
+            ctx.beginPath();
+            ctx.moveTo(x2, 0);
+            ctx.lineTo(x2 - h, h);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#991b2b'; // highlight stitch
+            ctx.beginPath();
+            ctx.moveTo(x2 + 1.5, 0);
+            ctx.lineTo(x2 - h + 1.5, h);
+            ctx.stroke();
+        }
+
+        // Quilted tuft buttons at intersections
+        ctx.fillStyle = '#38060c';
+        for (var iy = 0; iy <= h; iy += step / 2) {
+            for (var ix = 0; ix <= w; ix += step) {
+                var offset = (Math.round(iy / (step / 2)) % 2 === 0) ? 0 : step / 2;
+                ctx.beginPath();
+                ctx.arc(ix + offset, iy, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    });
+    return cachedBedQuiltTex;
+}
+
 // ==================== BUILD: APARTMENT ====================
 function buildApartment(isReturn) {
     scene.background = new THREE.Color(0x020202);
@@ -1678,16 +1741,16 @@ function buildApartment(isReturn) {
     interactables.push(doorMesh);
     gameState.apartmentDoorMesh = doorMesh;
 
-    // Coat Rack by the entrance door
+    // Coat Rack by the entrance door (Hallway entry side, clean separation from kitchen)
     var coatRackGroup = new THREE.Group();
-    coatRackGroup.position.set(-0.80, 1.6, 2.96);
+    coatRackGroup.position.set(1.15, 1.60, 2.96);
     scene.add(coatRackGroup);
-    addMesh(new THREE.BoxGeometry(0.44, 0.16, 0.02), woodMat, 0, 0, 0, coatRackGroup);
-    for (var hk = -0.16; hk <= 0.16; hk += 0.08) {
+    addMesh(new THREE.BoxGeometry(0.55, 0.16, 0.02), woodMat, 0, 0, 0, coatRackGroup);
+    for (var hk = -0.20; hk <= 0.20; hk += 0.10) {
         addMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.06, 6), tubChromeMat, hk, 0, 0.03, coatRackGroup).rotation.x = Math.PI / 4;
     }
     // Winter coat hanging
-    addMesh(new THREE.BoxGeometry(0.28, 0.72, 0.12), makeMat(0x1e293b), 0.08, -0.38, 0.06, coatRackGroup);
+    addMesh(new THREE.BoxGeometry(0.30, 0.74, 0.12), makeMat(0x1e293b), 0.10, -0.38, 0.06, coatRackGroup);
 
     // ==================== WINDOW & CURTAINS ====================
     var fm = makeMat(0x3e2723);
@@ -1733,13 +1796,76 @@ function buildApartment(isReturn) {
     gameState.curtainsMesh = curtainHitbox;
     gameState.curtainsClosed = false;
 
-    // ==================== BED & NIGHTSTAND ====================
-    var bedMesh = addMesh(new THREE.BoxGeometry(1.8, 0.5, 3.6), darkMat, 2.4, 0.25, -1.0);
-    addMesh(new THREE.BoxGeometry(0.7, 0.15, 0.5), pillowMat, 2.4, 0.58, -2.5);
-    bedMesh.userData = { name: 'Кровать (Спать)', type: 'bed' };
-    interactables.push(bedMesh);
-    gameState.apartmentBedMesh = bedMesh;
-    colliders.push({ minX: 1.5, maxX: 3.3, minZ: -2.8, maxZ: 0.8 });
+    // ==================== 1. ULTRA-REALISTIC BED WITH BURGUNDY QUILT ====================
+    var bedGroup = new THREE.Group();
+    bedGroup.position.set(2.35, 0, -1.0);
+    scene.add(bedGroup);
+
+    var bedWoodMat = makeMat(0x3e2417);
+    var bedTrimMat = makeMat(0x2a160d);
+    var mattressMat = makeMat(0xf4f0e6);
+    var sheetMat = makeMat(0xffffff);
+    var quiltMat = new THREE.MeshLambertMaterial({ map: getQuiltedBedTexture() });
+    var burgundySkirtMat = makeMat(0x6b101c);
+    var pillowMat = makeMat(0xfafafa);
+    var throwBlanketMat = makeMat(0x4a0e17);
+
+    // Bed Frame: 4 Turned Wooden Corner Posts
+    var postGeo = new THREE.BoxGeometry(0.10, 0.58, 0.10);
+    var postCapGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    // Footboard posts
+    addMesh(postGeo, bedWoodMat, -0.92, 0.29, 1.76, bedGroup);
+    addMesh(postCapGeo, bedWoodMat, -0.92, 0.60, 1.76, bedGroup);
+    addMesh(postGeo, bedWoodMat,  0.92, 0.29, 1.76, bedGroup);
+    addMesh(postCapGeo, bedWoodMat,  0.92, 0.60, 1.76, bedGroup);
+    // Headboard tall posts
+    var tallPostGeo = new THREE.BoxGeometry(0.10, 1.20, 0.10);
+    addMesh(tallPostGeo, bedWoodMat, -0.92, 0.60, -1.76, bedGroup);
+    addMesh(postCapGeo, bedWoodMat, -0.92, 1.22, -1.76, bedGroup);
+    addMesh(tallPostGeo, bedWoodMat,  0.92, 0.60, -1.76, bedGroup);
+    addMesh(postCapGeo, bedWoodMat,  0.92, 1.22, -1.76, bedGroup);
+
+    // Carved Headboard at z = -1.76
+    addMesh(new THREE.BoxGeometry(1.74, 0.72, 0.05), bedWoodMat, 0, 0.76, -1.76, bedGroup);
+    addMesh(new THREE.BoxGeometry(1.64, 0.58, 0.03), bedTrimMat, 0, 0.76, -1.74, bedGroup);
+    addMesh(new THREE.BoxGeometry(1.80, 0.08, 0.08), bedWoodMat, 0, 1.14, -1.76, bedGroup);
+
+    // Footboard at z = +1.76
+    addMesh(new THREE.BoxGeometry(1.74, 0.40, 0.05), bedWoodMat, 0, 0.32, 1.76, bedGroup);
+    addMesh(new THREE.BoxGeometry(1.80, 0.06, 0.08), bedWoodMat, 0, 0.53, 1.76, bedGroup);
+
+    // Side Rails
+    addMesh(new THREE.BoxGeometry(0.04, 0.18, 3.42), bedWoodMat, -0.90, 0.22, 0, bedGroup);
+    addMesh(new THREE.BoxGeometry(0.04, 0.18, 3.42), bedWoodMat,  0.90, 0.22, 0, bedGroup);
+
+    // Plush Mattress Base
+    addMesh(new THREE.BoxGeometry(1.72, 0.26, 3.40), mattressMat, 0, 0.35, 0, bedGroup);
+
+    // Quilted Burgundy Bedspread / Quilt (Бордовое покрывало)
+    addMesh(new THREE.BoxGeometry(1.74, 0.04, 2.70), quiltMat, 0, 0.49, -0.05, bedGroup);
+    addMesh(new THREE.BoxGeometry(0.03, 0.24, 2.70), burgundySkirtMat, -0.875, 0.36, -0.05, bedGroup);
+    addMesh(new THREE.BoxGeometry(0.03, 0.24, 2.70), burgundySkirtMat,  0.875, 0.36, -0.05, bedGroup);
+    addMesh(new THREE.BoxGeometry(1.74, 0.24, 0.03), burgundySkirtMat, 0, 0.36, 1.30, bedGroup);
+
+    // Turned-down white sheet fold
+    addMesh(new THREE.BoxGeometry(1.74, 0.035, 0.42), sheetMat, 0, 0.495, -1.50, bedGroup);
+    addMesh(new THREE.BoxGeometry(1.74, 0.02, 0.08), burgundySkirtMat, 0, 0.505, -1.30, bedGroup);
+
+    // Two Plush Pillows side-by-side with soft indentations
+    var p1 = addMesh(new THREE.BoxGeometry(0.68, 0.16, 0.46), pillowMat, -0.42, 0.56, -1.48, bedGroup);
+    p1.rotation.x = 0.10;
+    var p2 = addMesh(new THREE.BoxGeometry(0.68, 0.16, 0.46), pillowMat,  0.42, 0.56, -1.48, bedGroup);
+    p2.rotation.x = 0.10;
+
+    // Folded Accent Throw Blanket across foot of bed
+    addMesh(new THREE.BoxGeometry(1.75, 0.035, 0.60), throwBlanketMat, 0, 0.525, 0.85, bedGroup);
+
+    // Bed interaction hitbox & collider
+    var bedHitbox = addMesh(new THREE.BoxGeometry(1.85, 0.80, 3.65), new THREE.MeshBasicMaterial({ visible: false }), 0, 0.45, 0, bedGroup);
+    bedHitbox.userData = { name: 'Кровать (Спать)', type: 'bed' };
+    interactables.push(bedHitbox);
+    gameState.apartmentBedMesh = bedHitbox;
+    colliders.push({ minX: 1.40, maxX: 3.30, minZ: -2.85, maxZ: 0.85 });
 
     // Nightstand beside bed
     var ns = new THREE.Group();
@@ -1779,31 +1905,155 @@ function buildApartment(isReturn) {
         interactables.push(keyHitbox);
     }
 
-    // ==================== LARGE WOODEN WARDROBE (ШКАФ-СТЕНКА) ====================
+    // ==================== 2. LARGE INTERACTIVE WARDROBE (ШКАФ ДЛЯ ОДЕЖДЫ) ====================
+    // Positioned against the right wall at x=3.25, facing into the room (-x direction)
     var wardrobeGroup = new THREE.Group();
-    wardrobeGroup.position.set(2.4, 0, 0.85);
+    wardrobeGroup.position.set(3.25, 0, 1.70);
+    wardrobeGroup.rotation.y = -Math.PI / 2;
     scene.add(wardrobeGroup);
 
     var richWoodMat = makeMat(0x451a03);
+    var woodInnerMat = makeMat(0x6b3014);
     var woodDoorMat = makeMat(0x5c2b0d);
     var brassMat = makeMat(0xd4af37);
+    var hangerWoodMat = makeMat(0xb45309);
 
-    // Main wardrobe body
-    addMesh(new THREE.BoxGeometry(1.6, 2.30, 0.58), richWoodMat, 0, 1.15, 0, wardrobeGroup);
-    // 3 section paneled doors
-    addMesh(new THREE.BoxGeometry(0.48, 2.18, 0.02), woodDoorMat, -0.52, 1.15, 0.30, wardrobeGroup);
-    addMesh(new THREE.BoxGeometry(0.48, 2.18, 0.02), woodDoorMat,  0.0,  1.15, 0.30, wardrobeGroup);
-    addMesh(new THREE.BoxGeometry(0.48, 2.18, 0.02), woodDoorMat,  0.52, 1.15, 0.30, wardrobeGroup);
-    // Vertical brass handles
-    addMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.16, 8), brassMat, -0.32, 1.15, 0.32, wardrobeGroup);
-    addMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.16, 8), brassMat,  0.22, 1.15, 0.32, wardrobeGroup);
-    // Wardrobe crown cornice top moulding
-    addMesh(new THREE.BoxGeometry(1.66, 0.08, 0.62), richWoodMat, 0, 2.34, 0, wardrobeGroup);
+    // Wardrobe Body Casing (Width 1.50m along local X, Height 2.30m, Depth 0.58m along local Z)
+    // Back wall
+    addMesh(new THREE.BoxGeometry(1.50, 2.26, 0.03), richWoodMat, 0, 1.15, -0.27, wardrobeGroup);
+    // Left & right side panels
+    addMesh(new THREE.BoxGeometry(0.04, 2.26, 0.56), richWoodMat, -0.73, 1.15, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.04, 2.26, 0.56), richWoodMat,  0.73, 1.15, 0, wardrobeGroup);
+    // Bottom floor & top roof
+    addMesh(new THREE.BoxGeometry(1.50, 0.04, 0.56), richWoodMat, 0, 0.02, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(1.50, 0.04, 0.56), richWoodMat, 0, 2.28, 0, wardrobeGroup);
+    // Crown moulding on top
+    addMesh(new THREE.BoxGeometry(1.56, 0.08, 0.62), richWoodMat, 0, 2.34, 0, wardrobeGroup);
 
-    var wardrobeHitbox = addMesh(new THREE.BoxGeometry(1.65, 2.40, 0.65), new THREE.MeshBasicMaterial({ visible: false }), 0, 1.20, 0, wardrobeGroup);
-    wardrobeHitbox.userData = { name: 'Шкаф для одежды [F]', type: 'wardrobe' };
+    // Internal Shelves
+    // Upper hat / folded clothes shelf at y=1.92
+    addMesh(new THREE.BoxGeometry(1.42, 0.03, 0.52), woodInnerMat, 0, 1.92, 0, wardrobeGroup);
+    // Lower shoe shelf at y=0.32
+    addMesh(new THREE.BoxGeometry(1.42, 0.03, 0.52), woodInnerMat, 0, 0.32, 0, wardrobeGroup);
+
+    // Chrome Clothes Hanging Rail at y=1.82
+    addMesh(new THREE.CylinderGeometry(0.012, 0.012, 1.42, 8), tubChromeMat, 0, 1.82, 0, wardrobeGroup).rotation.z = Math.PI / 2;
+
+    // ==================== REALISTIC 3D CLOTHES INSIDE WARDROBE ====================
+    // Helper to create wooden coat hanger
+    function makeHanger(hx, hy) {
+        addMesh(new THREE.CylinderGeometry(0.004, 0.004, 0.08, 6), tubChromeMat, hx, hy + 0.05, 0, wardrobeGroup);
+        var arm = addMesh(new THREE.BoxGeometry(0.38, 0.018, 0.015), hangerWoodMat, hx, hy, 0, wardrobeGroup);
+        return arm;
+    }
+
+    // 1. Winter Woolen Coat (Зимнее тёплое пальто) at x=-0.44
+    makeHanger(-0.44, 1.78);
+    var coatMat = makeMat(0x1e293b);
+    var coatLapelMat = makeMat(0x0f172a);
+    // Torso body
+    addMesh(new THREE.BoxGeometry(0.32, 0.88, 0.18), coatMat, -0.44, 1.28, 0, wardrobeGroup);
+    // Folded 3D lapels & collar
+    addMesh(new THREE.BoxGeometry(0.24, 0.22, 0.04), coatLapelMat, -0.44, 1.62, 0.09, wardrobeGroup);
+    // Brass buttons down front
+    for (var btn = 0; btn < 4; btn++) {
+        addMesh(new THREE.CylinderGeometry(0.007, 0.007, 0.01, 8), brassMat, -0.44, 1.46 - btn * 0.16, 0.095, wardrobeGroup).rotation.x = Math.PI / 2;
+    }
+    // Sleeves hanging at sides
+    addMesh(new THREE.BoxGeometry(0.06, 0.65, 0.14), coatMat, -0.61, 1.34, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.06, 0.65, 0.14), coatMat, -0.27, 1.34, 0, wardrobeGroup);
+
+    // 2. Cozy Cream Knitted Sweater (Вязаный тёплый свитер) at x=-0.14
+    makeHanger(-0.14, 1.78);
+    var sweaterMat = makeMat(0xfef3c7);
+    var knitTrimMat = makeMat(0xdecbb5);
+    addMesh(new THREE.BoxGeometry(0.26, 0.56, 0.15), sweaterMat, -0.14, 1.46, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.14, 0.05, 0.16), knitTrimMat, -0.14, 1.74, 0, wardrobeGroup); // ribbed collar
+    addMesh(new THREE.BoxGeometry(0.26, 0.05, 0.155), knitTrimMat, -0.14, 1.18, 0, wardrobeGroup); // ribbed hem
+    addMesh(new THREE.BoxGeometry(0.05, 0.48, 0.12), sweaterMat, -0.28, 1.44, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.05, 0.48, 0.12), sweaterMat,  0.0,  1.44, 0, wardrobeGroup);
+
+    // 3. Crisp Light-Blue Button-down Shirt (Классическая рубашка) at x=0.15
+    makeHanger(0.15, 1.78);
+    var shirtMat = makeMat(0x93c5fd);
+    var shirtCollarMat = makeMat(0xdbeafe);
+    addMesh(new THREE.BoxGeometry(0.24, 0.60, 0.12), shirtMat, 0.15, 1.44, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.14, 0.06, 0.13), shirtCollarMat, 0.15, 1.74, 0.01, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.02, 0.54, 0.01), shirtCollarMat, 0.15, 1.44, 0.065, wardrobeGroup); // placket
+    addMesh(new THREE.BoxGeometry(0.045, 0.50, 0.10), shirtMat, 0.02, 1.43, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.045, 0.50, 0.10), shirtMat, 0.28, 1.43, 0, wardrobeGroup);
+
+    // 4. Brown Leather Jacket (Кожаная куртка) at x=0.45
+    makeHanger(0.45, 1.78);
+    var leatherMat = makeMat(0x78350f);
+    var zipMat = tubChromeMat;
+    addMesh(new THREE.BoxGeometry(0.28, 0.58, 0.16), leatherMat, 0.45, 1.45, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.01, 0.54, 0.01), zipMat, 0.45, 1.45, 0.085, wardrobeGroup); // metal zipper
+    addMesh(new THREE.BoxGeometry(0.18, 0.08, 0.03), leatherMat, 0.45, 1.72, 0.07, wardrobeGroup); // collar
+    addMesh(new THREE.BoxGeometry(0.055, 0.52, 0.13), leatherMat, 0.30, 1.42, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.055, 0.52, 0.13), leatherMat, 0.60, 1.42, 0, wardrobeGroup);
+
+    // 5. Folded Sweaters & Wool Scarf on Upper Shelf (y=1.95)
+    addMesh(new THREE.BoxGeometry(0.28, 0.07, 0.32), makeMat(0x831843), -0.35, 1.96, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.26, 0.06, 0.30), makeMat(0x065f46), -0.35, 2.03, 0, wardrobeGroup);
+    addMesh(new THREE.CylinderGeometry(0.06, 0.06, 0.28, 12), makeMat(0x64748b), 0.28, 2.00, 0, wardrobeGroup).rotation.x = Math.PI / 2;
+
+    // 6. Shoe Boxes & Winter Boots on Lower Shelf (y=0.35)
+    var shoeBox1 = new THREE.Group();
+    shoeBox1.position.set(-0.35, 0.34, 0);
+    wardrobeGroup.add(shoeBox1);
+    addMesh(new THREE.BoxGeometry(0.28, 0.16, 0.36), makeMat(0x1e3a8a), 0, 0.08, 0, shoeBox1);
+    addMesh(new THREE.BoxGeometry(0.29, 0.03, 0.37), makeMat(0xf8fafc), 0, 0.165, 0, shoeBox1);
+
+    var shoeBox2 = new THREE.Group();
+    shoeBox2.position.set(0.02, 0.34, 0);
+    wardrobeGroup.add(shoeBox2);
+    addMesh(new THREE.BoxGeometry(0.26, 0.14, 0.34), makeMat(0xb45309), 0, 0.07, 0, shoeBox2);
+    addMesh(new THREE.BoxGeometry(0.27, 0.03, 0.35), makeMat(0x451a03), 0, 0.145, 0, shoeBox2);
+
+    // Pair of Black Winter Boots
+    var bootMat = makeMat(0x0f172a);
+    var soleMat = makeMat(0x334155);
+    addMesh(new THREE.BoxGeometry(0.09, 0.03, 0.22), soleMat, 0.36, 0.35, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.08, 0.14, 0.18), bootMat, 0.36, 0.43, -0.01, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.09, 0.03, 0.22), soleMat, 0.48, 0.35, 0, wardrobeGroup);
+    addMesh(new THREE.BoxGeometry(0.08, 0.14, 0.18), bootMat, 0.48, 0.43, -0.01, wardrobeGroup);
+
+    // ==================== INTERACTIVE WARDROBE DOORS ====================
+    var leftDoorHinge = new THREE.Group();
+    leftDoorHinge.position.set(-0.71, 1.15, 0.27);
+    wardrobeGroup.add(leftDoorHinge);
+    var leftDoorMesh = addMesh(new THREE.BoxGeometry(0.70, 2.18, 0.025), woodDoorMat, 0.35, 0, 0, leftDoorHinge);
+    // Inner door beveled panel
+    addMesh(new THREE.BoxGeometry(0.60, 2.06, 0.01), richWoodMat, 0.35, 0, 0.012, leftDoorHinge);
+    // Brass handle
+    addMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.18, 8), brassMat, 0.62, 0, 0.035, leftDoorHinge);
+
+    var rightDoorHinge = new THREE.Group();
+    rightDoorHinge.position.set(0.71, 1.15, 0.27);
+    wardrobeGroup.add(rightDoorHinge);
+    var rightDoorMesh = addMesh(new THREE.BoxGeometry(0.70, 2.18, 0.025), woodDoorMat, -0.35, 0, 0, rightDoorHinge);
+    addMesh(new THREE.BoxGeometry(0.60, 2.06, 0.01), richWoodMat, -0.35, 0, 0.012, rightDoorHinge);
+    addMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.18, 8), brassMat, -0.62, 0, 0.035, rightDoorHinge);
+
+    // Warm Interior Spotlight (turns on when opened)
+    var wardrobeLight = new THREE.PointLight(0xffeedd, 0, 2.8);
+    wardrobeLight.position.set(0, 2.15, 0.05);
+    wardrobeGroup.add(wardrobeLight);
+
+    // Interactive Hitbox across the front of the wardrobe
+    var wardrobeHitbox = addMesh(new THREE.BoxGeometry(1.50, 2.25, 0.35), new THREE.MeshBasicMaterial({ visible: false }), 0, 1.15, 0.30, wardrobeGroup);
+    wardrobeHitbox.userData = {
+        name: 'Шкаф для одежды (Открыть) [F]',
+        type: 'wardrobe',
+        isOpen: false,
+        animating: false,
+        leftDoor: leftDoorHinge,
+        rightDoor: rightDoorHinge,
+        light: wardrobeLight
+    };
     interactables.push(wardrobeHitbox);
-    colliders.push({ minX: 1.55, maxX: 3.25, minZ: 0.55, maxZ: 1.15 });
+    colliders.push({ minX: 2.90, maxX: 3.55, minZ: 0.90, maxZ: 2.50 });
 
     // ==================== TV & TV STAND ====================
     addMesh(new THREE.BoxGeometry(1.5, 0.8, 0.8), woodMat, -2.25, 0.4, -2.5);
@@ -1976,28 +2226,58 @@ function buildApartment(isReturn) {
     gameState.stoveLight = stoveLight;
     gameState.stovePanGroup = panGroup;
 
-    // Upper Kitchen Cabinet & Shelf on front wall above stove (aligned with stove, zero clipping with fridge)
+    // ==================== GRAND LONG UPPER KITCHEN CABINET & SHELF UNIT ====================
+    // Spans width=1.10m from x=-1.73 to x=-0.63. 2cm gap to fridge (ends at x=-1.75), 3cm gap to door frame (x=-0.60)
     var kitchenCab = new THREE.Group();
-    kitchenCab.position.set(-1.35, 2.20, 2.83);
+    kitchenCab.position.set(-1.18, 2.22, 2.83);
     scene.add(kitchenCab);
+
     var cabBodyMat = makeMat(0xf1f5f9);
     var cabDoorMat = makeMat(0xe2e8f0);
-    // Main cabinet body (width 0.68 matches stove width 0.67, leaves 6cm gap to fridge at x=-1.75)
-    addMesh(new THREE.BoxGeometry(0.68, 0.65, 0.32), cabBodyMat, 0, 0, 0, kitchenCab);
-    // Two cabinet doors
-    addMesh(new THREE.BoxGeometry(0.31, 0.59, 0.02), cabDoorMat, -0.165, 0, -0.16, kitchenCab);
-    addMesh(new THREE.BoxGeometry(0.31, 0.59, 0.02), cabDoorMat,  0.165, 0, -0.16, kitchenCab);
-    // Chrome handles
-    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat, -0.035, -0.10, -0.18, kitchenCab);
-    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat,  0.035, -0.10, -0.18, kitchenCab);
-    // Lower shelf trim under cabinet
-    addMesh(new THREE.BoxGeometry(0.68, 0.025, 0.16), makeMat(0xd4d4d8), 0, -0.34, -0.08, kitchenCab);
-    // Decorative spice jars on the shelf
-    addMesh(new THREE.CylinderGeometry(0.02, 0.02, 0.06, 8), makeMat(0xd97706), -0.22, -0.30, -0.08, kitchenCab);
-    addMesh(new THREE.CylinderGeometry(0.02, 0.02, 0.06, 8), makeMat(0x059669), -0.14, -0.30, -0.08, kitchenCab);
-    addMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.07, 8), makeMat(0xf8fafc), 0.18, -0.295, -0.08, kitchenCab);
+    var cabMouldingMat = makeMat(0xe2e8f0);
+    var hoodMetalMat = makeMat(0x94a3b8);
 
-    // ==================== KITCHEN FRIDGE ====================
+    // 1. Long Upper Modular Cabinet Body (width 1.10m, height 0.65m, depth 0.32m)
+    addMesh(new THREE.BoxGeometry(1.10, 0.65, 0.32), cabBodyMat, 0, 0, 0, kitchenCab);
+    // Top decorative crown moulding
+    addMesh(new THREE.BoxGeometry(1.12, 0.04, 0.34), cabMouldingMat, 0, 0.345, 0, kitchenCab);
+
+    // 2. Three Paneled Cabinet Doors
+    // Left cabinet door (x = -0.36)
+    addMesh(new THREE.BoxGeometry(0.34, 0.58, 0.02), cabDoorMat, -0.36, 0, -0.16, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat, -0.22, -0.08, -0.18, kitchenCab);
+    // Center cabinet door (above stove, x = 0)
+    addMesh(new THREE.BoxGeometry(0.34, 0.58, 0.02), cabDoorMat, 0, 0, -0.16, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat, 0.14, -0.08, -0.18, kitchenCab);
+    // Right cabinet door (x = 0.36)
+    addMesh(new THREE.BoxGeometry(0.34, 0.58, 0.02), cabDoorMat, 0.36, 0, -0.16, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.015, 0.12, 0.025), tubChromeMat, 0.50, -0.08, -0.18, kitchenCab);
+
+    // 3. Integrated Range Hood Extractor (Вытяжка) centered over stove at local x = -0.17
+    addMesh(new THREE.BoxGeometry(0.50, 0.06, 0.33), hoodMetalMat, -0.17, -0.33, 0, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.42, 0.01, 0.24), makeMat(0x334155), -0.17, -0.36, 0, kitchenCab);
+
+    // 4. Full-Width Lower Kitchen Organizer Shelf (Длинная нижняя полка для посуды и специй)
+    addMesh(new THREE.BoxGeometry(1.10, 0.025, 0.18), makeMat(0xd4d4d8), 0, -0.40, -0.07, kitchenCab);
+
+    // Colorful glass spice jars and condiments
+    addMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.065, 10), makeMat(0xd97706), -0.48, -0.355, -0.07, kitchenCab); // Paprika
+    addMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.065, 10), makeMat(0x059669), -0.42, -0.355, -0.07, kitchenCab); // Herbs
+    addMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.065, 10), makeMat(0xb91c1c), -0.36, -0.355, -0.07, kitchenCab); // Chili
+    addMesh(new THREE.CylinderGeometry(0.025, 0.025, 0.075, 10), makeMat(0x0284c7),  0.18, -0.350, -0.07, kitchenCab); // Sea Salt
+    addMesh(new THREE.CylinderGeometry(0.024, 0.024, 0.070, 10), makeMat(0xf8fafc),  0.25, -0.355, -0.07, kitchenCab); // Pepper
+
+    // Wooden cutting board standing on shelf
+    addMesh(new THREE.BoxGeometry(0.18, 0.22, 0.02), makeMat(0xa16207), 0.44, -0.27, -0.11, kitchenCab);
+    // Ceramic kitchen mug
+    addMesh(new THREE.CylinderGeometry(0.035, 0.03, 0.08, 12), makeMat(0xf8fafc), 0.35, -0.35, -0.07, kitchenCab);
+
+    // Kitchen dish towel hanging on chrome hook at right edge
+    addMesh(new THREE.CylinderGeometry(0.006, 0.006, 0.04, 6), tubChromeMat, 0.52, -0.42, -0.07, kitchenCab).rotation.x = Math.PI / 4;
+    addMesh(new THREE.BoxGeometry(0.14, 0.38, 0.015), makeMat(0xf1f5f9), 0.52, -0.62, -0.06, kitchenCab);
+    addMesh(new THREE.BoxGeometry(0.14, 0.025, 0.018), makeMat(0x0284c7), 0.52, -0.78, -0.06, kitchenCab);
+
+        // ==================== KITCHEN FRIDGE ====================
     // Turned to the right: back against front wall (z=3.0), front door facing into room (-z)
     var fridgeGroup = new THREE.Group();
     fridgeGroup.position.set(-2.35, 0, 2.45);
@@ -2068,10 +2348,11 @@ function buildApartment(isReturn) {
     var bathMatMesh = addMesh(new THREE.PlaneGeometry(0.9, 0.55), makeMat(0x1e3a8a), -4.4, 0.01, 1.3);
     bathMatMesh.rotation.x = -Math.PI / 2;
 
-    // Heated Towel Rail (Полотенцесушитель) on wall
+    // Heated Towel Rail (Полотенцесушитель) on front bathroom wall (completely clear of door)
     var towelRailMat = tubChromeMat;
     var railGroup = new THREE.Group();
-    railGroup.position.set(-3.05, 1.35, 1.85);
+    railGroup.position.set(-3.75, 1.40, 2.37);
+    railGroup.rotation.y = Math.PI;
     scene.add(railGroup);
     addMesh(new THREE.CylinderGeometry(0.016, 0.016, 0.9, 8), towelRailMat, 0, 0, 0, railGroup);
     addMesh(new THREE.CylinderGeometry(0.016, 0.016, 0.45, 8), towelRailMat, -0.05, 0.35, 0, railGroup).rotation.z = Math.PI / 2;
@@ -2542,7 +2823,7 @@ function buildApartment(isReturn) {
 
         chapterUpdate = function() {};
     } else {
-        camera.position.set(2.4, 0.8, -1.0);
+        camera.position.set(2.35, 0.85, -1.0);
     }
 }
 
@@ -2633,7 +2914,7 @@ function getSpruceNeedleTexture() {
 
 function buildChristmasTree() {
     var treeGroup = new THREE.Group();
-    treeGroup.position.set(2.22, 0, 2.18);
+    treeGroup.position.set(1.65, 0, 2.25);
     scene.add(treeGroup);
 
     var spruceTex = getSpruceNeedleTexture();
@@ -2925,10 +3206,10 @@ function buildChristmasTree() {
     addMesh(new THREE.BoxGeometry(0.03, 0.144, 0.184), goldRibbonMat, 0, 0, 0, b5Group);
 
     // 14. Solid Collider around Tree, Skirt and Gifts
-    colliders.push({ minX: 1.55, maxX: 2.85, minZ: 1.50, maxZ: 2.80 });
+    colliders.push({ minX: 1.15, maxX: 2.15, minZ: 1.75, maxZ: 2.75 });
 
     // 15. Interactive Hitbox
-    var treeHitbox = addMesh(new THREE.BoxGeometry(1.6, 2.7, 1.6), new THREE.MeshBasicMaterial({ visible: false }), 0, 1.35, 0, treeGroup);
+    var treeHitbox = addMesh(new THREE.BoxGeometry(0.85, 2.4, 0.85), new THREE.MeshBasicMaterial({ visible: false }), 0, 1.20, 0, treeGroup);
     treeHitbox.userData = { name: 'Пышная новогодняя ёлка', type: 'tree' };
     interactables.push(treeHitbox);
 
@@ -7639,9 +7920,42 @@ function handleInteraction(obj) {
         }
     }
 
-        else if (d.type === 'wardrobe') {
-        playClickSound();
-        showThought('Большой деревянный шкаф для одежды. Внутри висят зимнее пальто, куртка и лежат тёплые вещи.');
+    else if (d.type === 'wardrobe') {
+        if (d.animating) return;
+        d.animating = true;
+        if (!d.isOpen) {
+            d.isOpen = true;
+            playDoorOpenSound();
+            showThought('В шкафу аккуратно висит одежда: тёплое зимнее пальто, вязаный свитер, рубашка и кожаная куртка.');
+            if (d.light) d.light.intensity = 0.85;
+            var rot = 0;
+            var wiv = setInterval(function() {
+                if (d.leftDoor) d.leftDoor.rotation.y -= 0.05;
+                if (d.rightDoor) d.rightDoor.rotation.y += 0.05;
+                rot += 0.05;
+                if (rot >= Math.PI / 2) {
+                    clearInterval(wiv);
+                    d.animating = false;
+                    d.name = 'Шкаф (Закрыть) [F]';
+                }
+            }, 25);
+        } else {
+            d.isOpen = false;
+            playDoorOpenSound();
+            showThought('Закрываю шкаф.');
+            var rot2 = 0;
+            var wiv2 = setInterval(function() {
+                if (d.leftDoor) d.leftDoor.rotation.y += 0.05;
+                if (d.rightDoor) d.rightDoor.rotation.y -= 0.05;
+                rot2 += 0.05;
+                if (rot2 >= Math.PI / 2) {
+                    clearInterval(wiv2);
+                    d.animating = false;
+                    if (d.light) d.light.intensity = 0;
+                    d.name = 'Шкаф для одежды (Открыть) [F]';
+                }
+            }, 25);
+        }
     }
     else if (d.type === 'switch') {
         gameState.lightOn = !gameState.lightOn;
@@ -7851,7 +8165,7 @@ function handleInteraction(obj) {
             if (!gameState.sleptChapter8) {
                 gameState.sleptChapter8 = true;
                 showThought('Ложусь поспать... Главное — никому не открывать дверь.');
-                camera.position.set(2.4, 0.8, -1.0);
+                camera.position.set(2.35, 0.85, -1.0);
                 startSleep(5, function() {
                     var t = setInterval(function() {
                         camera.position.y += 0.04;
@@ -7866,7 +8180,7 @@ function handleInteraction(obj) {
                 });
             } else {
                 showThought('Ложусь вздремнуть...');
-                camera.position.set(2.4, 0.8, -1.0);
+                camera.position.set(2.35, 0.85, -1.0);
                 startSleep(5, function() {
                     var t2 = setInterval(function() {
                         camera.position.y += 0.04;
