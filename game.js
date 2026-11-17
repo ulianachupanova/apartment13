@@ -822,6 +822,7 @@ function PointerLock(cam, dom) {
         self._euler.y -= (e.movementX || 0) * 0.002;
         self._euler.x -= (e.movementY || 0) * 0.002;
         self._euler.x = Math.max(-1.5, Math.min(1.5, self._euler.x));
+        self._euler.z = 0;
         self.camera.quaternion.setFromEuler(self._euler);
     };
 
@@ -1334,8 +1335,8 @@ function loadChapter(n) {
         showChapterCard('ГЛАВА 1', 'Пробуждение', function() {
             controls.lock();
             camera.position.set(1.0, 1.10, -1.0);
-            camera.lookAt(0, 1.4, 0.5);
-            camera.rotation.z = 0;
+            camera.rotation.set(0, 0, 0);
+            camera.quaternion.set(0, 0, 0, 1);
             var t = setInterval(function() {
                 camera.position.y += 0.04;
                 if (camera.position.y >= 1.6) {
@@ -1371,8 +1372,8 @@ function loadChapter(n) {
         showChapterCard('ГЛАВА 6', 'Доброе утро', function() {
             controls.lock();
             camera.position.set(1.0, 1.10, -1.0);
-            camera.lookAt(0, 1.4, 0.5);
-            camera.rotation.z = 0;
+            camera.rotation.set(0, 0, 0);
+            camera.quaternion.set(0, 0, 0, 1);
             var t = setInterval(function() {
                 camera.position.y += 0.04;
                 if (camera.position.y >= 1.6) {
@@ -2828,8 +2829,8 @@ function buildApartment(isReturn) {
         chapterUpdate = function() {};
     } else {
         camera.position.set(1.0, 1.6, -1.0);
-        camera.lookAt(0, 1.4, 0.5);
-        camera.rotation.z = 0;
+        camera.rotation.set(0, 0, 0);
+        camera.quaternion.set(0, 0, 0, 1);
     }
 }
 
@@ -8174,8 +8175,8 @@ function handleInteraction(obj) {
                 camera.position.set(1.0, 1.10, -1.0);
                 startSleep(5, function() {
                     camera.position.set(1.0, 1.10, -1.0);
-                    camera.lookAt(0, 1.4, 0.5);
-                    camera.rotation.z = 0;
+                    camera.rotation.set(0, 0, 0);
+                    camera.quaternion.set(0, 0, 0, 1);
                     var t = setInterval(function() {
                         camera.position.y += 0.04;
                         if (camera.position.y >= 1.6) {
@@ -8192,8 +8193,8 @@ function handleInteraction(obj) {
                 camera.position.set(1.0, 1.10, -1.0);
                 startSleep(5, function() {
                     camera.position.set(1.0, 1.10, -1.0);
-                    camera.lookAt(0, 1.4, 0.5);
-                    camera.rotation.z = 0;
+                    camera.rotation.set(0, 0, 0);
+                    camera.quaternion.set(0, 0, 0, 1);
                     var t2 = setInterval(function() {
                         camera.position.y += 0.04;
                         if (camera.position.y >= 1.6) {
