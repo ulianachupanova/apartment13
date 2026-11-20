@@ -86,15 +86,43 @@ function playDoorOpenSound() {
     osc.stop(now + 0.4);
 }
 
-﻿// ==================== ERROR HANDLER ====================
-// NOTE: "Script error at 0:0" = browser blocked error details from cross-origin script
-// All scripts are now local so this should not appear
+// ==================== ERROR HANDLER ====================
+// Suppress cross-origin & browser-extension errors:
+// When an error originates in a browser extension or cross-origin context, browsers
+// deliberately sanitize all information to msg="Script error.", url="", line=0, col=0.
+// Displaying a red screen for this benign noise breaks the player's experience.
 window.onerror = function(msg, url, line, col, error) {
-    var div = document.createElement('div');
-    div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:15px;z-index:99999;font:14px monospace;white-space:pre-wrap;';
-    div.textContent = 'ОШИБКА JS: ' + msg + '\nФайл: ' + url + '\nСтрока: ' + line + ':' + col;
-    if (error && error.stack) div.textContent += '\n' + error.stack;
-    document.body.appendChild(div);
+    if (!msg || msg === 'Script error.' || msg === 'Script error' || (!url && line === 0 && col === 0)) {
+        console.warn('Игнорирована внешняя ошибка браузера/расширения (Script error 0:0):', msg);
+        return true;
+    }
+    if (url && (url.indexOf('chrome-extension://') !== -1 || url.indexOf('moz-extension://') !== -1 || url.indexOf('edge-extension://') !== -1)) {
+        console.warn('Игнорирована ошибка стороннего расширения браузера:', url, msg);
+        return true;
+    }
+    console.error('JS Error:', msg, url, line, col, error);
+    if (document.body && !document.getElementById('js-error-banner')) {
+        var div = document.createElement('div');
+        div.id = 'js-error-banner';
+        div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(220,38,38,0.95);color:#fff;padding:12px 18px;z-index:999999;font:13px monospace;white-space:pre-wrap;box-shadow:0 4px 12px rgba(0,0,0,0.4);border-bottom:2px solid #fff;';
+        
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕ Закрыть';
+        closeBtn.style.cssText = 'float:right;background:#fff;color:#b91c1c;border:none;padding:3px 10px;font-weight:bold;cursor:pointer;border-radius:3px;font-family:sans-serif;margin-left:10px;';
+        closeBtn.onclick = function() {
+            if (div.parentNode) div.parentNode.removeChild(div);
+        };
+        div.appendChild(closeBtn);
+
+        var textSpan = document.createElement('span');
+        textSpan.textContent = 'ОШИБКА JS: ' + msg + '\nФайл: ' + (url || 'локальный скрипт') + '\nСтрока: ' + line + ':' + col;
+        if (error && error.stack) {
+            textSpan.textContent += '\n' + error.stack;
+        }
+        div.appendChild(textSpan);
+        document.body.appendChild(div);
+    }
+    return false;
 };
 
 // ==================== GLOBAL STATE ====================
@@ -10068,8 +10096,10 @@ function updateTVNewsBroadcast(delta) {
 
     // Digital Clock
     var date = new Date();
-    var hh = String(date.getHours()).padStart(2, '0');
-    var mm = String(date.getMinutes()).padStart(2, '0');
+    var curHours = date.getHours();
+    var curMins = date.getMinutes();
+    var hh = (curHours < 10 ? '0' : '') + curHours;
+    var mm = (curMins < 10 ? '0' : '') + curMins;
     ctx.fillStyle = '#fde047';
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'right';
