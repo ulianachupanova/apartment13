@@ -12,10 +12,22 @@
 <body>
     <div id="blocker">
         <div id="instructions" role="button" tabindex="0">
-            <span id="click-to-wake">Нажмите, чтобы проснуться</span>
-            <br />
-            <br />
-            <span id="controls-hint" class="small-text">WASD / стрелки — ходить · Мышь — осмотреться<br>ЛКМ / F — взаимодействовать · Esc — пауза</span>
+            <h1 id="game-main-title">КВАРТИРА 13</h1>
+            <div id="click-to-wake" class="start-btn">▶ НАЖАТЬ, ЧТОБЫ ПРОСНУТЬСЯ</div>
+            <div id="controls-hint" class="small-text">WASD / стрелки — ходить · Мышь — осмотреться<br>ЛКМ / F — взаимодействовать · Esc — пауза</div>
+            <div id="chapter-select-box">
+                <div class="chap-select-title">ВЫБОР ГЛАВЫ (ДЛЯ ТЕСТИРОВАНИЯ):</div>
+                <div class="chap-btn-row">
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(1);">1. Утро (ТВ, ключи)</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(2);">2. Улица</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(3);">3. Офис (Roblox, 1С)</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(4);">4. Дорога домой</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(5);">5. Конец смены</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(6);">6. Елка</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(7);">7. Супермаркет</button>
+                    <button type="button" class="chap-btn" onclick="event.stopPropagation(); loadChapter(8);">8. Финал (Ночь)</button>
+                </div>
+            </div>
         </div>
     </div>
     

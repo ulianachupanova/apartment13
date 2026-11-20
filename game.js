@@ -1464,15 +1464,19 @@ function showChapterCard(title, sub, callback) {
     gameState.transitioning = true;
     chapterTitle.textContent = title;
     chapterSubtitle.textContent = sub;
+    chapterOverlay.style.display = 'flex';
     chapterOverlay.style.opacity = 1;
     setTimeout(function() {
         chapterOverlay.style.opacity = 0;
         setTimeout(function() {
+            chapterOverlay.style.display = 'none';
             gameState.transitioning = false;
             if (callback) callback();
-        }, 1500);
-    }, 3000);
+        }, 1000);
+    }, 2200);
 }
+
+window.loadChapter = loadChapter;
 
 function loadChapter(n) {
     if (gameState.transitioning) return;
@@ -1789,8 +1793,8 @@ function getQuiltedBedTexture() {
 
 // ==================== BUILD: APARTMENT ====================
 function buildApartment(isReturn) {
-    scene.background = new THREE.Color(0x020202);
-    scene.fog = new THREE.Fog(0x020202, 1.0, 16);
+    scene.background = new THREE.Color(0x0a1220);
+    scene.fog = new THREE.Fog(0x0a1220, 2.5, 24.0);
 
     var tl = new THREE.TextureLoader();
     var wallTex = getWallpaperTexture();
@@ -2960,13 +2964,18 @@ function buildApartment(isReturn) {
     sw.userData = { name: 'Выключатель', type: 'switch' };
     interactables.push(sw);
 
-    scene.add(new THREE.AmbientLight(0x1a1a1a, 1.0));
-    var winLight = new THREE.PointLight(0x4488ff, 1.0, 15);
+    scene.add(new THREE.AmbientLight(0x40556e, 1.4));
+    var winLight = new THREE.PointLight(0x7ebbff, 2.2, 18);
     winLight.position.set(0.2, 1.5, -2.6);
     scene.add(winLight);
     roomLight = new THREE.PointLight(0xffeedd, 0, 18);
     roomLight.position.set(0.2, 2.9, -0.1);
     scene.add(roomLight);
+
+    // Subtle switch indicator light so player easily spots the wall switch in morning dawn
+    var swGlow = new THREE.PointLight(0x60a5fa, 0.6, 2.0);
+    swGlow.position.set(0.80, 1.35, 2.85);
+    scene.add(swGlow);
 
     // Snow outside window
     addSnow(-22, -3.25, -16, 16, 0, 9.5, 2600, 0.075);
@@ -8814,6 +8823,12 @@ function init() {
         uiLayer.style.display = 'block';
         instructions.blur();
     };
+
+    // Pre-build apartment in background so player immediately sees the 3D room through the glass menu
+    window.loadChapter = loadChapter;
+    buildApartment(false);
+    camera.position.set(0.8, 1.5, -0.2);
+    camera.lookAt(0.2, 1.4, -2.6);
     controls.onUnlock = function() {
         resetMovement();
         currentInteractable = null;
