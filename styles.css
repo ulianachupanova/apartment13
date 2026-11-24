@@ -729,8 +729,8 @@ canvas {
 
 .rb-cards-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
 }
 
 .rb-card {
@@ -762,6 +762,8 @@ canvas {
 .thumb-office { background: #1e3a5f; }
 .thumb-doors { background: #3b1d11; }
 .thumb-blizzard { background: #134e4a; }
+.thumb-tower { background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6); }
+.thumb-disaster { background: linear-gradient(135deg, #15803d, #eab308, #dc2626); }
 
 .rb-card-title {
     font-size: 13px;
@@ -2804,6 +2806,15 @@ canvas {
 
 .rb-ctrl-jump:hover {
     background: #0369a1;
+}
+
+.rb-ctrl-action {
+    background: #d97706;
+    border-color: #b45309;
+}
+
+.rb-ctrl-action:hover {
+    background: #f59e0b;
 }
 
 .rb-ctrl-reset {

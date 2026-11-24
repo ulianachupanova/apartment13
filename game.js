@@ -3105,21 +3105,25 @@ window.getTVNewsTexture = getTVNewsTexture;
 window.updateTVNewsBroadcast = updateTVNewsBroadcast;
 
 
-// ==================== REALISTIC PLAYABLE ROBLOX OBBY ENGINE ====================
+// ==================== REALISTIC PLAYABLE ROBLOX MULTI-GAME ENGINE ====================
 var rbActive = false;
 var rbAnimId = null;
 var rbCanvas = null;
 var rbCtx = null;
-var rbCurrentPlace = 'Escape The Night Office (Obby)';
+var rbCurrentPlace = 'DOORS: Hotel 13 (Horror)';
+var rbGameType = 'doors'; // 'doors' | 'tower' | 'disaster' | 'office'
 var rbRobux = 9999;
-var rbKeys = { left: false, right: false, jump: false };
+var rbTime = 0;
+var rbKeys = { left: false, right: false, jump: false, interact: false };
 var rbChatMessages = [];
 var rbChatSimTimer = 0;
 var rbInGameMenuOpen = false;
+var rbChatVisible = true;
+var rbLeaderboardVisible = false;
 
 var rbPlayer = {
     x: 60,
-    y: 220,
+    y: 200,
     vx: 0,
     vy: 0,
     w: 24,
@@ -3131,10 +3135,11 @@ var rbPlayer = {
     isDead: false,
     oofTimer: 0,
     spawnX: 60,
-    spawnY: 220,
+    spawnY: 200,
     stage: 1,
     coins: 0,
-    hasSpeedCoil: false
+    hasSpeedCoil: false,
+    hasGravityCoil: false
 };
 
 var rbPlatforms = [];
@@ -3144,83 +3149,451 @@ var rbCoins = [];
 var rbFinishPad = null;
 var rbParticles = [];
 
-function initRobloxLevel() {
-    rbPlatforms = [
-        // Stage 1: Office Desks & Furniture
-        { x: 0, y: 260, w: 220, h: 40, col: '#475569', label: 'Пол' },
-        { x: 260, y: 220, w: 90, h: 22, col: '#78350f', label: 'Стол 1' },
-        { x: 380, y: 185, w: 60, h: 20, col: '#334155', label: 'Стул' },
-        { x: 470, y: 155, w: 90, h: 22, col: '#78350f', label: 'Стол 2' },
-        { x: 590, y: 195, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 1' },
+// DOORS State
+var rbDoors = [];
+var rbClosets = [];
+var rbInCloset = false;
+var rbKeyHeld = false;
+var rbRushActive = false;
+var rbRushX = 3000;
+var rbRushTimer = 0;
+var rbRushFlicker = 0;
+var rbDoorKnobs = 0;
 
-        // Stage 2: Neon Red Killbricks & Stud Bridges
-        { x: 740, y: 205, w: 75, h: 20, col: '#3b82f6' },
-        { x: 890, y: 205, w: 70, h: 20, col: '#3b82f6' },
-        { x: 1040, y: 175, w: 75, h: 20, col: '#3b82f6' },
-        { x: 1160, y: 145, w: 70, h: 20, col: '#3b82f6' },
-        { x: 1270, y: 175, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 2' },
+// Tower of Hell State
+var rbLasers = [];
+var rbMovingPlatforms = [];
+var rbTowerTimer = 180;
 
-        // Stage 3: Disappearing Glass & Speed Coil
-        { x: 1440, y: 180, w: 70, h: 20, col: '#06b6d4' },
-        { x: 1550, y: 170, w: 65, h: 18, col: '#a855f7', isGlass: true, fade: 0 },
-        { x: 1650, y: 160, w: 65, h: 18, col: '#a855f7', isGlass: true, fade: 1.5 },
-        { x: 1760, y: 145, w: 80, h: 20, col: '#e11d48', hasCoil: true },
-        { x: 1880, y: 165, w: 70, h: 20, col: '#06b6d4' },
-        { x: 2020, y: 175, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 3' },
+// Natural Disaster State
+var rbDisasterType = 'none'; // 'meteors' | 'tsunami' | 'acid' | 'volcano'
+var rbDisasterTimer = 8;
+var rbDisasterDuration = 0;
+var rbDisasterWarning = 'Приготовьтесь! Скоро начнется бедствие...';
+var rbMeteors = [];
+var rbTsunamiY = 330;
+var rbAcidDrops = [];
+var rbApples = [];
+var rbSurvivalsCount = 0;
 
-        // Stage 4: Blizzard Rooftop Run
-        { x: 2190, y: 185, w: 75, h: 20, col: '#0284c7' },
-        { x: 2310, y: 160, w: 65, h: 20, col: '#0284c7' },
-        { x: 2420, y: 140, w: 70, h: 20, col: '#0284c7' },
-        { x: 2540, y: 130, w: 140, h: 16, col: '#0f766e', isBridge: true },
-        { x: 2730, y: 165, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 4' },
-
-        // Stage 5: Golden Winner's Lounge & Bloxy Trophy
-        { x: 2900, y: 175, w: 55, h: 25, col: '#ca8a04' },
-        { x: 2980, y: 155, w: 55, h: 45, col: '#ca8a04' },
-        { x: 3060, y: 135, w: 55, h: 65, col: '#ca8a04' },
-        { x: 3140, y: 115, w: 220, h: 90, col: '#eab308', isWinPlatform: true }
-    ];
-
-    rbKillbricks = [
-        // Lava floor in Stage 2
-        { x: 720, y: 295, w: 560, h: 40 },
-        // Floating red hazard blocks
-        { x: 825, y: 205, w: 50, h: 14 },
-        { x: 975, y: 185, w: 50, h: 14 },
-        { x: 1115, y: 155, w: 35, h: 14 },
-        // Lava pit in Stage 3
-        { x: 1420, y: 295, w: 600, h: 40 },
-        { x: 1960, y: 165, w: 45, h: 14 },
-        // Lava pit in Stage 4
-        { x: 2170, y: 295, w: 580, h: 40 }
-    ];
-
-    rbCheckpoints = [
-        { x: 630, y: 195, stage: 1, reached: true },
-        { x: 1310, y: 175, stage: 2, reached: false },
-        { x: 2060, y: 175, stage: 3, reached: false },
-        { x: 2770, y: 165, stage: 4, reached: false }
-    ];
-
-    rbCoins = [
-        { x: 305, y: 185, taken: false },
-        { x: 515, y: 120, taken: false },
-        { x: 925, y: 170, taken: false },
-        { x: 1195, y: 105, taken: false },
-        { x: 1682, y: 125, taken: false },
-        { x: 1800, y: 110, taken: false },
-        { x: 2342, y: 125, taken: false },
-        { x: 2610, y: 95, taken: false },
-        { x: 3007, y: 115, taken: false },
-        { x: 3087, y: 95, taken: false }
-    ];
-
-    rbFinishPad = { x: 3220, y: 115, w: 80, h: 10, triggered: false };
+// ==================== AUDIO SYNTHESIS FOR ROBLOX ====================
+function playRobloxOof() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.35);
+        g.gain.setValueAtTime(0.35, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.36);
+    } catch (e) {}
 }
 
+function playRobloxJump() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(540, now + 0.12);
+        g.gain.setValueAtTime(0.2, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+    } catch (e) {}
+}
+
+function playRobloxCoin() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(987.77, now);
+        osc.frequency.setValueAtTime(1318.51, now + 0.08);
+        g.gain.setValueAtTime(0.25, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    } catch (e) {}
+}
+
+function playRobloxWin() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var notes = [523.25, 659.25, 783.99, 1046.5];
+        for (var i = 0; i < notes.length; i++) {
+            var osc = ctx.createOscillator();
+            var g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(notes[i], now + i * 0.09);
+            g.gain.setValueAtTime(0.25, now + i * 0.09);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.35);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(now + i * 0.09);
+            osc.stop(now + i * 0.09 + 0.36);
+        }
+    } catch (e) {}
+}
+
+function playRobloxSiren() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(700, now);
+        osc.frequency.linearRampToValueAtTime(450, now + 0.25);
+        osc.frequency.linearRampToValueAtTime(700, now + 0.5);
+        g.gain.setValueAtTime(0.2, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.51);
+    } catch (e) {}
+}
+
+function playRushRoar() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 1.2);
+        g.gain.setValueAtTime(0.35, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.22);
+    } catch (e) {}
+}
+
+function playAppleCrunch() {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+        g.gain.setValueAtTime(0.3, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+    } catch (e) {}
+}
+
+// ==================== LEVEL INITIALIZATION PER GAME ====================
+function initRobloxLevel(gameType) {
+    rbGameType = gameType || 'doors';
+    rbPlatforms = [];
+    rbKillbricks = [];
+    rbCheckpoints = [];
+    rbCoins = [];
+    rbFinishPad = null;
+    rbParticles = [];
+
+    // Reset player state
+    rbPlayer.x = 60;
+    rbPlayer.y = 200;
+    rbPlayer.vx = 0;
+    rbPlayer.vy = 0;
+    rbPlayer.onGround = false;
+    rbPlayer.facingRight = true;
+    rbPlayer.health = 100;
+    rbPlayer.isDead = false;
+    rbPlayer.oofTimer = 0;
+    rbPlayer.spawnX = 60;
+    rbPlayer.spawnY = 200;
+    rbPlayer.stage = 1;
+    rbPlayer.coins = 0;
+    rbPlayer.hasSpeedCoil = false;
+    rbPlayer.hasGravityCoil = false;
+
+    // 1. DOORS: HOTEL 13
+    if (rbGameType === 'doors') {
+        rbInCloset = false;
+        rbKeyHeld = false;
+        rbRushActive = false;
+        rbRushX = 3000;
+        rbRushTimer = 0;
+        rbRushFlicker = 0;
+        rbDoorKnobs = 0;
+
+        // Long continuous hotel floor
+        rbPlatforms.push({ x: 0, y: 260, w: 3200, h: 40, col: '#3e2723', label: 'Пол отеля' });
+
+        // Hotel Doors (001 - 013)
+        rbDoors = [
+            { x: 220, num: '001', opened: false, isLocked: false },
+            { x: 560, num: '002', opened: false, isLocked: false },
+            { x: 960, num: '003', opened: false, isLocked: true },  // Locked! Key at x=780
+            { x: 1380, num: '004', opened: false, isLocked: false },
+            { x: 1820, num: '005', opened: false, isLocked: true }, // Locked! Key at x=1620
+            { x: 2240, num: '006', opened: false, isLocked: false },
+            { x: 2640, num: '007', opened: false, isLocked: false },
+            { x: 3020, num: '013', opened: false, isLocked: false, isExit: true }
+        ];
+
+        // Hiding Closets (Шкафы)
+        rbClosets = [
+            { x: 380, w: 38, h: 56 },
+            { x: 740, w: 38, h: 56 },
+            { x: 1160, w: 38, h: 56 },
+            { x: 1580, w: 38, h: 56 },
+            { x: 2020, w: 38, h: 56 },
+            { x: 2440, w: 38, h: 56 },
+            { x: 2840, w: 38, h: 56 }
+        ];
+
+        // Gold Keys for locked doors & Door Knobs
+        rbCoins = [
+            { x: 780, y: 235, taken: false, isKey: true, doorNum: '003' },
+            { x: 1620, y: 235, taken: false, isKey: true, doorNum: '005' },
+            { x: 340, y: 240, taken: false, isKnob: true },
+            { x: 520, y: 240, taken: false, isKnob: true },
+            { x: 1120, y: 240, taken: false, isKnob: true },
+            { x: 1520, y: 240, taken: false, isKnob: true },
+            { x: 1980, y: 240, taken: false, isKnob: true },
+            { x: 2380, y: 240, taken: false, isKnob: true },
+            { x: 2800, y: 240, taken: false, isKnob: true }
+        ];
+
+        // Checkpoints at major doors
+        rbCheckpoints = [
+            { x: 220, y: 260, stage: 1, reached: true },
+            { x: 960, y: 260, stage: 3, reached: false },
+            { x: 1820, y: 260, stage: 5, reached: false },
+            { x: 2640, y: 260, stage: 7, reached: false }
+        ];
+
+        rbFinishPad = { x: 3020, y: 260, w: 60, h: 10, triggered: false };
+    }
+    // 2. TOWER OF HELL (RAINBOW OBBY)
+    else if (rbGameType === 'tower') {
+        rbTowerTimer = 180;
+        rbLasers = [
+            { cx: 840, cy: 195, len: 65, angle: 0, speed: 2.4 },
+            { cx: 1620, cy: 170, len: 75, angle: 1.5, speed: -2.8 },
+            { cx: 2180, cy: 150, len: 70, angle: 0.7, speed: 3.2 },
+            { cx: 2540, cy: 135, len: 80, angle: 2.2, speed: -2.6 }
+        ];
+
+        rbPlatforms = [
+            // Stage 1: Red Neon
+            { x: 0, y: 260, w: 200, h: 30, col: '#ef4444', label: 'Красный старт' },
+            { x: 250, y: 230, w: 75, h: 20, col: '#ef4444' },
+            { x: 370, y: 205, w: 75, h: 20, col: '#ef4444' },
+
+            // Stage 2: Orange Neon
+            { x: 490, y: 190, w: 80, h: 20, col: '#f97316' },
+            { x: 620, y: 210, w: 70, h: 20, col: '#f97316' },
+
+            // Stage 3: Yellow Moving Platform
+            { x: 730, y: 200, w: 80, h: 20, col: '#eab308' },
+            { x: 860, y: 190, w: 75, h: 20, col: '#eab308', isMoving: true, minX: 860, maxX: 1020, dir: 1, speed: 2.0 },
+            { x: 1060, y: 180, w: 80, h: 20, col: '#eab308' },
+
+            // Stage 4: Green with Speed Coil!
+            { x: 1190, y: 175, w: 85, h: 20, col: '#22c55e', hasSpeedCoil: true },
+            { x: 1320, y: 155, w: 70, h: 20, col: '#22c55e' },
+            { x: 1430, y: 175, w: 75, h: 20, col: '#22c55e' },
+
+            // Stage 5: Cyan with Gravity Coil!
+            { x: 1550, y: 170, w: 85, h: 20, col: '#06b6d4', hasGravityCoil: true },
+            { x: 1720, y: 150, w: 70, h: 20, col: '#06b6d4' },
+            { x: 1850, y: 165, w: 75, h: 20, col: '#06b6d4' },
+
+            // Stage 6: Blue with Laser Obstacles
+            { x: 1980, y: 160, w: 80, h: 20, col: '#3b82f6' },
+            { x: 2110, y: 145, w: 75, h: 20, col: '#3b82f6' },
+            { x: 2260, y: 160, w: 80, h: 20, col: '#3b82f6' },
+
+            // Stage 7: Purple Fading Glass
+            { x: 2390, y: 155, w: 70, h: 18, col: '#a855f7', isGlass: true, fade: 0 },
+            { x: 2500, y: 145, w: 70, h: 18, col: '#a855f7', isGlass: true, fade: 1.5 },
+            { x: 2620, y: 135, w: 75, h: 20, col: '#a855f7' },
+
+            // Stage 8: Magenta / Gold WINNER PLATFORM!
+            { x: 2770, y: 130, w: 250, h: 30, col: '#ec4899', isWinPlatform: true, label: 'ФИНИШ БАШНИ' }
+        ];
+
+        // Lava pit along the entire bottom
+        rbKillbricks = [
+            { x: 180, y: 310, w: 2700, h: 50 }
+        ];
+
+        // Tower of Hell has NO CHECKPOINTS (classic rule!)
+        rbCheckpoints = [];
+
+        rbCoins = [
+            { x: 300, y: 190, taken: false },
+            { x: 530, y: 150, taken: false },
+            { x: 920, y: 140, taken: false },
+            { x: 1230, y: 135, taken: false },
+            { x: 1590, y: 125, taken: false },
+            { x: 1755, y: 105, taken: false },
+            { x: 2145, y: 105, taken: false },
+            { x: 2425, y: 110, taken: false }
+        ];
+
+        rbFinishPad = { x: 2880, y: 130, w: 80, h: 10, triggered: false };
+    }
+    // 3. NATURAL DISASTER SURVIVAL
+    else if (rbGameType === 'disaster') {
+        rbDisasterType = 'none';
+        rbDisasterTimer = 6;
+        rbDisasterDuration = 0;
+        rbDisasterWarning = 'Приготовьтесь! Скоро начнется бедствие...';
+        rbMeteors = [];
+        rbTsunamiY = 330;
+        rbAcidDrops = [];
+        rbSurvivalsCount = 0;
+
+        // Grassy island with soil base
+        rbPlatforms = [
+            // Main Island Grass
+            { x: 0, y: 260, w: 1200, h: 50, col: '#16a34a', label: 'Остров' },
+
+            // Red Brick House - 1st floor & ceiling / 2nd floor
+            { x: 320, y: 180, w: 260, h: 16, col: '#991b1b', label: '2-й этаж' },
+            // House Roof (Shelter from meteors & acid rain!)
+            { x: 300, y: 110, w: 300, h: 20, col: '#334155', isRoof: true, label: 'Крыша дома' },
+
+            // Watchtower (High altitude shelter from tsunami!)
+            { x: 860, y: 190, w: 110, h: 14, col: '#78350f', label: 'Вышка ярус 1' },
+            { x: 880, y: 105, w: 100, h: 16, col: '#78350f', isTowerTop: true, label: 'Вершина вышки' },
+
+            // Steps/Ladders to climb house and tower
+            { x: 250, y: 225, w: 55, h: 16, col: '#b45309' },
+            { x: 595, y: 150, w: 55, h: 16, col: '#b45309' },
+            { x: 800, y: 225, w: 50, h: 16, col: '#b45309' }
+        ];
+
+        // Ocean Water around island (falling deals damage)
+        rbKillbricks = [
+            { x: -500, y: 310, w: 500, h: 60, isWater: true },
+            { x: 1200, y: 310, w: 800, h: 60, isWater: true }
+        ];
+
+        // Green Apples (restore health)
+        rbCoins = [
+            { x: 120, y: 235, taken: false, isApple: true },
+            { x: 450, y: 155, taken: false, isApple: true },
+            { x: 920, y: 80, taken: false, isApple: true },
+            { x: 740, y: 235, taken: false, isApple: true }
+        ];
+
+        rbCheckpoints = [
+            { x: 60, y: 260, stage: 1, reached: true }
+        ];
+
+        rbFinishPad = null; // Infinite survival rounds!
+    }
+    // 4. ESCAPE THE NIGHT OFFICE (OBBY)
+    else {
+        rbPlatforms = [
+            // Stage 1: Office Desks & Furniture
+            { x: 0, y: 260, w: 220, h: 40, col: '#475569', label: 'Пол' },
+            { x: 260, y: 220, w: 90, h: 22, col: '#78350f', label: 'Стол 1' },
+            { x: 380, y: 185, w: 60, h: 20, col: '#334155', label: 'Стул' },
+            { x: 470, y: 155, w: 90, h: 22, col: '#78350f', label: 'Стол 2' },
+            { x: 590, y: 195, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 1' },
+
+            // Stage 2: Neon Red Killbricks & Stud Bridges
+            { x: 740, y: 205, w: 75, h: 20, col: '#3b82f6' },
+            { x: 890, y: 205, w: 70, h: 20, col: '#3b82f6' },
+            { x: 1040, y: 175, w: 75, h: 20, col: '#3b82f6' },
+            { x: 1160, y: 145, w: 70, h: 20, col: '#3b82f6' },
+            { x: 1270, y: 175, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 2' },
+
+            // Stage 3: Disappearing Glass & Speed Coil
+            { x: 1440, y: 180, w: 70, h: 20, col: '#06b6d4' },
+            { x: 1550, y: 170, w: 65, h: 18, col: '#a855f7', isGlass: true, fade: 0 },
+            { x: 1650, y: 160, w: 65, h: 18, col: '#a855f7', isGlass: true, fade: 1.5 },
+            { x: 1760, y: 145, w: 80, h: 20, col: '#e11d48', hasSpeedCoil: true },
+            { x: 1880, y: 165, w: 70, h: 20, col: '#06b6d4' },
+            { x: 2020, y: 175, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 3' },
+
+            // Stage 4: Blizzard Rooftop Run
+            { x: 2190, y: 185, w: 75, h: 20, col: '#0284c7' },
+            { x: 2310, y: 160, w: 65, h: 20, col: '#0284c7' },
+            { x: 2420, y: 140, w: 70, h: 20, col: '#0284c7' },
+            { x: 2540, y: 130, w: 140, h: 16, col: '#0f766e', isBridge: true },
+            { x: 2730, y: 165, w: 120, h: 30, col: '#475569', label: 'Чекпоинт 4' },
+
+            // Stage 5: Final Escape Ventilation & Win Pad
+            { x: 2900, y: 155, w: 65, h: 18, col: '#38bdf8' },
+            { x: 3000, y: 135, w: 65, h: 18, col: '#38bdf8' },
+            { x: 3100, y: 115, w: 70, h: 18, col: '#38bdf8' },
+            { x: 3200, y: 115, w: 120, h: 24, col: '#fbbf24', isWinPlatform: true }
+        ];
+
+        rbKillbricks = [
+            { x: 720, y: 295, w: 560, h: 40 },
+            { x: 825, y: 205, w: 50, h: 14 },
+            { x: 975, y: 185, w: 50, h: 14 },
+            { x: 1115, y: 155, w: 35, h: 14 },
+            { x: 1420, y: 295, w: 600, h: 40 },
+            { x: 1960, y: 165, w: 45, h: 14 },
+            { x: 2170, y: 295, w: 580, h: 40 }
+        ];
+
+        rbCheckpoints = [
+            { x: 630, y: 195, stage: 1, reached: true },
+            { x: 1310, y: 175, stage: 2, reached: false },
+            { x: 2060, y: 175, stage: 3, reached: false },
+            { x: 2770, y: 165, stage: 4, reached: false }
+        ];
+
+        rbCoins = [
+            { x: 305, y: 185, taken: false },
+            { x: 515, y: 120, taken: false },
+            { x: 925, y: 170, taken: false },
+            { x: 1195, y: 105, taken: false },
+            { x: 1682, y: 125, taken: false },
+            { x: 1800, y: 110, taken: false },
+            { x: 2342, y: 125, taken: false },
+            { x: 2610, y: 95, taken: false }
+        ];
+
+        rbFinishPad = { x: 3220, y: 115, w: 80, h: 10, triggered: false };
+    }
+}
+
+// ==================== WINDOW CONTROL EXPORTS ====================
 window.launchRobloxGame = function(gameName) {
-    rbCurrentPlace = gameName || 'Escape The Night Office (Obby)';
+    rbCurrentPlace = gameName || 'DOORS: Hotel 13 (Horror)';
     var modal = document.getElementById('rb-loading-modal');
     var title = document.getElementById('rb-loading-title');
     var desc = document.getElementById('rb-loading-desc');
@@ -3228,22 +3601,22 @@ window.launchRobloxGame = function(gameName) {
     if (!modal) return;
 
     modal.style.display = 'flex';
-    title.textContent = 'Подключение к «' + rbCurrentPlace + '»...';
-    desc.textContent = 'Поиск серверов Roblox... Загрузка плейса...';
+    if (title) title.textContent = 'Подключение к «' + rbCurrentPlace + '»...';
+    if (desc) desc.textContent = 'Поиск серверов Roblox... Загрузка плейса...';
     if (fill) fill.style.width = '0%';
 
     var progress = 0;
     var loadIv = setInterval(function() {
         progress += 25;
         if (fill) fill.style.width = progress + '%';
-        if (progress === 50) desc.textContent = 'Загрузка аватара Player_13 и текстур...';
-        if (progress === 75) desc.textContent = 'Синхронизация с сервером (Пинг: 42ms)...';
+        if (progress === 50 && desc) desc.textContent = 'Загрузка аватара Player_13 и ресурсов...';
+        if (progress === 75 && desc) desc.textContent = 'Синхронизация с сервером (Пинг: 38ms)...';
         if (progress >= 100) {
             clearInterval(loadIv);
             modal.style.display = 'none';
             startRobloxObby(rbCurrentPlace);
         }
-    }, 280);
+    }, 250);
 };
 
 window.closeRobloxModal = function() {
@@ -3254,8 +3627,10 @@ window.closeRobloxModal = function() {
 window.startRobloxObby = startRobloxObby;
 function startRobloxObby(gameName) {
     rbActive = true;
-    document.getElementById('rb-discover-view').style.display = 'none';
-    document.getElementById('rb-gameplay-view').style.display = 'block';
+    var discView = document.getElementById('rb-discover-view');
+    var gameView = document.getElementById('rb-gameplay-view');
+    if (discView) discView.style.display = 'none';
+    if (gameView) gameView.style.display = 'block';
 
     var titleEl = document.getElementById('rb-current-game-title');
     if (titleEl) titleEl.textContent = '🎮 ' + gameName;
@@ -3264,32 +3639,42 @@ function startRobloxObby(gameName) {
     if (!rbCanvas) return;
     rbCtx = rbCanvas.getContext('2d');
 
-    initRobloxLevel();
+    // Determine game type from name
+    var gType = 'office';
+    if (gameName.indexOf('DOORS') !== -1) gType = 'doors';
+    else if (gameName.indexOf('Tower') !== -1 || gameName.indexOf('Hell') !== -1) gType = 'tower';
+    else if (gameName.indexOf('Disaster') !== -1 || gameName.indexOf('Survival') !== -1) gType = 'disaster';
 
-    // Reset player
-    rbPlayer.x = 60;
-    rbPlayer.y = 210;
-    rbPlayer.vx = 0;
-    rbPlayer.vy = 0;
-    rbPlayer.onGround = false;
-    rbPlayer.facingRight = true;
-    rbPlayer.health = 100;
-    rbPlayer.isDead = false;
-    rbPlayer.oofTimer = 0;
-    rbPlayer.spawnX = 60;
-    rbPlayer.spawnY = 210;
-    rbPlayer.stage = 1;
-    rbPlayer.coins = 0;
-    rbPlayer.hasSpeedCoil = false;
-    rbParticles = [];
+    initRobloxLevel(gType);
 
-    updateRobloxHUD();
-
-    // Bind keyboard controls
+    // Setup input listeners
     window.removeEventListener('keydown', onRobloxKeyDown);
     window.removeEventListener('keyup', onRobloxKeyUp);
     window.addEventListener('keydown', onRobloxKeyDown);
     window.addEventListener('keyup', onRobloxKeyUp);
+
+    // Initialize chat with game-specific greeting
+    var chatBox = document.getElementById('rb-chat-messages');
+    if (chatBox) chatBox.innerHTML = '';
+
+    if (rbGameType === 'doors') {
+        addRobloxChatMessage('system', '🏨 Добро пожаловать в DOORS: Hotel 13!');
+        addRobloxChatMessage('system', '💡 Ищите золотые ключи от дверей. Когда свет замигает — прячьтесь в ШКАФ [F]!');
+        addRobloxChatMessage('NoobSlayer99', 'Кто нашел зажигалку?');
+    } else if (rbGameType === 'tower') {
+        addRobloxChatMessage('system', '🌈 Добро пожаловать в Tower of Hell!');
+        addRobloxChatMessage('system', '⚡ Прыгайте по башне без чекпоинтов! Собирайте Speed Coil и берегитесь лазеров!');
+        addRobloxChatMessage('SpeedDemon', 'Я прошел желтый этаж за 15 секунд!');
+    } else if (rbGameType === 'disaster') {
+        addRobloxChatMessage('system', '🌋 Добро пожаловать в Natural Disaster Survival!');
+        addRobloxChatMessage('system', '⚠️ Выживайте на острове! Ешьте яблоки [F] для восстановления здоровья!');
+        addRobloxChatMessage('BaconHair_Pro', 'Цунами приближается, бегите на крышу вышки!');
+    } else {
+        addRobloxChatMessage('system', '🏢 Добро пожаловать в Escape The Night Office!');
+        addRobloxChatMessage('system', '🔥 Прыгайте по столам, избегайте лавы и доберитесь до вертолета на крыше!');
+    }
+
+    updateRobloxHUD();
 
     if (rbAnimId) cancelAnimationFrame(rbAnimId);
     rbAnimId = requestAnimationFrame(robloxGameLoop);
@@ -3303,8 +3688,63 @@ window.stopRobloxGame = function() {
     }
     window.removeEventListener('keydown', onRobloxKeyDown);
     window.removeEventListener('keyup', onRobloxKeyUp);
+    var gp = document.getElementById('rb-gameplay-view');
+    var disc = document.getElementById('rb-discover-view');
+    if (gp) gp.style.display = 'none';
+    if (disc) disc.style.display = 'block';
 };
 
+window.leaveRobloxGame = function() {
+    window.stopRobloxGame();
+};
+
+window.toggleRobloxInGameMenu = function() {
+    var menu = document.getElementById('rb-esc-menu');
+    if (!menu) return;
+    rbInGameMenuOpen = (menu.style.display === 'none' || menu.style.display === '');
+    menu.style.display = rbInGameMenuOpen ? 'flex' : 'none';
+};
+window.toggleRobloxEscMenu = window.toggleRobloxInGameMenu;
+
+window.resetRobloxAvatar = function() {
+    killRobloxAvatar('Сброс персонажа (OOF)');
+    var menu = document.getElementById('rb-esc-menu');
+    if (menu) menu.style.display = 'none';
+    rbInGameMenuOpen = false;
+};
+window.respawnRobloxInGame = window.resetRobloxAvatar;
+
+window.toggleRobloxChat = function() {
+    var chatBox = document.getElementById('rb-chat-box');
+    if (!chatBox) return;
+    rbChatVisible = (chatBox.style.display === 'none');
+    chatBox.style.display = rbChatVisible ? 'block' : 'none';
+};
+
+window.toggleRobloxLeaderboard = function() {
+    addRobloxChatMessage('system', '👥 Список игроков на сервере: Player_13 (Вы), NoobMaster2012, SpeedDemon, BaconHair_Pro');
+};
+
+window.rbSetKey = function(key, state) {
+    if (key === 'left') rbKeys.left = state;
+    if (key === 'right') rbKeys.right = state;
+    if (key === 'jump') rbKeys.jump = state;
+};
+
+window.rbTriggerJump = function() {
+    if (!rbPlayer.isDead && !rbInCloset && rbPlayer.onGround) {
+        var jumpPower = rbPlayer.hasGravityCoil ? -11.5 : -8.5;
+        rbPlayer.vy = jumpPower;
+        rbPlayer.onGround = false;
+        playRobloxJump();
+    }
+};
+
+window.rbTriggerAction = function() {
+    handleRobloxInteract();
+};
+
+// ==================== INPUT HANDLING ====================
 function onRobloxKeyDown(e) {
     if (!rbActive) return;
     if (document.activeElement && document.activeElement.id === 'rb-chat-input') return;
@@ -3315,12 +3755,17 @@ function onRobloxKeyDown(e) {
     if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight' || e.key === 'в' || e.key === 'В') {
         rbKeys.right = true;
     }
-    if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp' || e.key === ' ' || e.key === 'ц' || e.key === 'Ц') {
-        if (rbPlayer.onGround && !rbPlayer.isDead) {
-            rbPlayer.vy = -10.0;
+    if (e.key === 'w' || e.key === 'W' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ц' || e.key === 'Ц') {
+        if (!rbKeys.jump && rbPlayer.onGround && !rbPlayer.isDead && !rbInCloset) {
+            var jumpPower = rbPlayer.hasGravityCoil ? -11.5 : -8.5;
+            rbPlayer.vy = jumpPower;
             rbPlayer.onGround = false;
             playRobloxJump();
         }
+        rbKeys.jump = true;
+    }
+    if (e.key === 'f' || e.key === 'F' || e.key === 'e' || e.key === 'E' || e.key === 'а' || e.key === 'А' || e.key === 'у' || e.key === 'У') {
+        handleRobloxInteract();
     }
     if (e.key === 'Escape') {
         window.toggleRobloxInGameMenu();
@@ -3335,105 +3780,141 @@ function onRobloxKeyUp(e) {
     if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight' || e.key === 'в' || e.key === 'В') {
         rbKeys.right = false;
     }
+    if (e.key === 'w' || e.key === 'W' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ц' || e.key === 'Ц') {
+        rbKeys.jump = false;
+    }
 }
 
-window.rbSetKey = function(key, state) {
-    if (!rbActive) return;
-    if (key === 'left') rbKeys.left = state;
-    if (key === 'right') rbKeys.right = state;
-};
-
-window.rbTriggerJump = function() {
-    if (!rbActive) return;
-    if (rbPlayer.onGround && !rbPlayer.isDead) {
-        rbPlayer.vy = -10.0;
-        rbPlayer.onGround = false;
-        playRobloxJump();
+function handleRobloxInteract() {
+    // 1. DOORS Closet Interact
+    if (rbGameType === 'doors') {
+        if (rbInCloset) {
+            rbInCloset = false;
+            addRobloxChatMessage('system', '🚪 Вы вышли из шкафа.');
+            return;
+        }
+        for (var c = 0; c < rbClosets.length; c++) {
+            var cl = rbClosets[c];
+            if (Math.abs(rbPlayer.x + rbPlayer.w/2 - (cl.x + cl.w/2)) < 35 && Math.abs(rbPlayer.y - 204) < 40) {
+                rbInCloset = true;
+                rbPlayer.vx = 0;
+                rbPlayer.vy = 0;
+                addRobloxChatMessage('system', '🚪 Вы спрятались в шкафу! Rush вас не заметит.');
+                break;
+            }
+        }
     }
-};
-
-window.toggleRobloxInGameMenu = function() {
-    var menu = document.getElementById('rb-esc-menu');
-    if (!menu) return;
-    rbInGameMenuOpen = (menu.style.display === 'none');
-    menu.style.display = rbInGameMenuOpen ? 'flex' : 'none';
-};
-
-window.resetRobloxAvatar = function() {
-    if (!rbActive || rbPlayer.isDead) return;
-    killRobloxAvatar('Сброс персонажа');
-    if (rbInGameMenuOpen) window.toggleRobloxInGameMenu();
-};
-
-window.leaveRobloxGame = function() {
-    window.stopRobloxGame();
-    var menu = document.getElementById('rb-esc-menu');
-    if (menu) menu.style.display = 'none';
-    document.getElementById('rb-gameplay-view').style.display = 'none';
-    document.getElementById('rb-discover-view').style.display = 'block';
-};
-
-window.toggleRobloxChat = function() {
-    var chat = document.getElementById('rb-chat-box');
-    if (chat) chat.style.display = (chat.style.display === 'none') ? 'block' : 'none';
-};
-
-window.toggleRobloxLeaderboard = function() {
-    // Shows temporary message in chat
-    addRobloxChatMessage('system', '🏆 Лидерборд: 1. Player_13 (' + rbPlayer.coins + ' R$) · 2. Pro_Builder · 3. Bacon_Boy');
-};
-
-window.sendRobloxChat = function() {
-    var input = document.getElementById('rb-chat-input');
-    if (!input || !input.value.trim()) return;
-    var msg = input.value.trim();
-    input.value = '';
-    addRobloxChatMessage('player', msg);
-};
+    // 2. Natural Disaster Apple Interact
+    else if (rbGameType === 'disaster') {
+        for (var a = 0; a < rbCoins.length; a++) {
+            var ap = rbCoins[a];
+            if (ap.isApple && !ap.taken && Math.abs(rbPlayer.x - ap.x) < 40) {
+                ap.taken = true;
+                rbPlayer.health = Math.min(100, rbPlayer.health + 35);
+                playAppleCrunch();
+                updateRobloxHUD();
+                addRobloxChatMessage('system', '🍏 Вы съели яблоко и восстановили +35 HP!');
+                break;
+            }
+        }
+    }
+}
 
 function addRobloxChatMessage(sender, text) {
     var container = document.getElementById('rb-chat-messages');
     if (!container) return;
     var div = document.createElement('div');
+    div.className = 'rb-chat-msg';
+
+    var nameSpan = document.createElement('span');
     if (sender === 'system') {
-        div.className = 'rb-chat-msg system';
-        div.textContent = text;
-    } else if (sender === 'player') {
-        div.className = 'rb-chat-msg';
-        div.innerHTML = '<span class="rb-user-noob">[Player_13]:</span> ' + text;
+        nameSpan.className = 'rb-chat-msg system';
+        nameSpan.textContent = '[СИСТЕМА]: ';
+    } else if (typeof sender === 'object') {
+        nameSpan.className = sender.cls || 'rb-user-pro';
+        nameSpan.textContent = '[' + sender.name + ']: ';
     } else {
-        div.className = 'rb-chat-msg';
-        div.innerHTML = '<span class="' + sender.cls + '">[' + sender.name + ']:</span> ' + text;
+        nameSpan.className = 'rb-user-pro';
+        nameSpan.textContent = '[Player_13]: ';
     }
+
+    var txtSpan = document.createElement('span');
+    txtSpan.textContent = text;
+
+    div.appendChild(nameSpan);
+    div.appendChild(txtSpan);
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 }
 
+window.sendRobloxChat = function() {
+    var inp = document.getElementById('rb-chat-input');
+    if (!inp || !inp.value.trim()) return;
+    var msg = inp.value.trim();
+    inp.value = '';
+    addRobloxChatMessage('self', msg);
+
+    setTimeout(function() {
+        if (!rbActive) return;
+        var replies = [
+            { name: 'CoolBuilder_12', cls: 'rb-user-pro', text: 'Красивый прыжок!' },
+            { name: 'ProGamer_X', cls: 'rb-user-pro', text: 'gg bro' },
+            { name: 'Bacon_Boy2012', cls: 'rb-user-bacon', text: 'Осторожно спереди!' },
+            { name: 'NoobMaster', cls: 'rb-user-noob', text: ':)' }
+        ];
+        var r = replies[Math.floor(Math.random() * replies.length)];
+        addRobloxChatMessage(r, r.text);
+    }, 1200);
+};
+
 function updateRobloxHUD() {
     var hFill = document.getElementById('rb-health-fill');
     var hText = document.getElementById('rb-health-text');
-    var sText = document.getElementById('rb-stage-text');
-    var cText = document.getElementById('rb-coins-text');
-    var rBal = document.getElementById('rb-robux-balance');
+    var stageEl = document.getElementById('rb-stage-text');
+    var coinsEl = document.getElementById('rb-coins-text');
+    var robuxEl = document.getElementById('rb-robux-balance');
 
-    if (hFill) hFill.style.width = rbPlayer.health + '%';
-    if (hText) hText.textContent = rbPlayer.health;
-    if (sText) sText.textContent = 'Этап ' + rbPlayer.stage + ' / 5';
-    if (cText) cText.textContent = rbPlayer.coins * 10;
-    if (rBal) rBal.textContent = (rbRobux + rbPlayer.coins * 10);
+    if (hFill) hFill.style.width = Math.max(0, rbPlayer.health) + '%';
+    if (hText) hText.textContent = Math.round(Math.max(0, rbPlayer.health));
+    if (robuxEl) robuxEl.textContent = rbRobux.toLocaleString();
+
+    if (stageEl) {
+        if (rbGameType === 'doors') {
+            stageEl.textContent = 'Дверь ' + rbPlayer.stage + ' / 13';
+        } else if (rbGameType === 'tower') {
+            stageEl.textContent = 'Этаж ' + rbPlayer.stage + ' / 8';
+        } else if (rbGameType === 'disaster') {
+            stageEl.textContent = 'Выжито: ' + rbSurvivalsCount;
+        } else {
+            stageEl.textContent = 'Этап ' + rbPlayer.stage + ' / 5';
+        }
+    }
+
+    if (coinsEl) {
+        if (rbGameType === 'doors') {
+            coinsEl.textContent = rbDoorKnobs + ' Ручек' + (rbKeyHeld ? ' [Ключ 🔑]' : '');
+        } else if (rbGameType === 'tower') {
+            coinsEl.textContent = '⏱ ' + Math.floor(rbTowerTimer / 60) + ':' + (rbTowerTimer % 60 < 10 ? '0' : '') + Math.floor(rbTowerTimer % 60);
+        } else if (rbGameType === 'disaster') {
+            coinsEl.textContent = 'Бедствие: ' + Math.ceil(rbDisasterTimer) + 'с';
+        } else {
+            coinsEl.textContent = rbPlayer.coins + ' R$';
+        }
+    }
 }
 
 function killRobloxAvatar(reason) {
     if (rbPlayer.isDead) return;
     rbPlayer.isDead = true;
     rbPlayer.health = 0;
-    rbPlayer.oofTimer = 0.85; // 0.85s death pause
+    rbPlayer.oofTimer = 0.85;
+    rbPlayer.vx = 0;
+    rbPlayer.vy = -3;
+    rbInCloset = false;
     playRobloxOof();
     updateRobloxHUD();
 
-    // Spawn 8 scatter block particles (ragdoll simulation)
-    var colors = ['#fde047', '#3b82f6', '#22c55e', '#fde047', '#3b82f6', '#22c55e', '#ef4444'];
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 18; i++) {
         rbParticles.push({
             x: rbPlayer.x + 12,
             y: rbPlayer.y + 18,
@@ -3441,10 +3922,10 @@ function killRobloxAvatar(reason) {
             vy: -4 - Math.random() * 5,
             w: 6 + Math.random() * 5,
             h: 6 + Math.random() * 5,
-            col: colors[i % colors.length],
+            col: ['#fbbf24', '#3b82f6', '#22c55e', '#ef4444', '#1e293b'][i % 5],
             rot: Math.random() * Math.PI,
             vRot: (Math.random() - 0.5) * 0.3,
-            life: 1.0
+            life: 1.2
         });
     }
 
@@ -3458,36 +3939,205 @@ function respawnRobloxAvatar() {
     rbPlayer.vy = 0;
     rbPlayer.health = 100;
     rbPlayer.isDead = false;
-    rbPlayer.oofTimer = 0;
+    rbInCloset = false;
     updateRobloxHUD();
 }
 
+// ==================== ROBLOX MAIN GAME LOOP ====================
 function robloxGameLoop() {
     if (!rbActive) return;
 
-    var dt = 0.016; // 60 FPS step
+    var dt = 0.016; // 60 FPS
+    rbTime += dt;
     var ctx = rbCtx;
     var canvasW = rbCanvas.width;
     var canvasH = rbCanvas.height;
 
     // Simulated Chat Events periodically
     rbChatSimTimer += dt;
-    if (rbChatSimTimer > 8.0) {
+    if (rbChatSimTimer > 7.0) {
         rbChatSimTimer = 0;
-        var chatSamples = [
-            { name: 'Bacon_Boy2012', cls: 'rb-user-bacon', text: 'bro this jump is tricky lol' },
-            { name: 'NoobMaster', cls: 'rb-user-noob', text: 'oof' },
-            { name: 'Pro_Builder', cls: 'rb-user-pro', text: 'use the speed coil on stage 3!' },
-            { name: 'Guest_666', cls: 'rb-user-noob', text: 'watch out for the red lava bricks' },
-            { name: 'CoolDude_X', cls: 'rb-user-pro', text: 'gg everyone' }
-        ];
+        var chatSamples = [];
+        if (rbGameType === 'doors') {
+            chatSamples = [
+                { name: 'DoorsPro', cls: 'rb-user-pro', text: 'Сик на 50-й двери, берегитесь!' },
+                { name: 'Bacon_Boy2012', cls: 'rb-user-bacon', text: 'Прячьтесь в шкаф, когда свет мигает!!' },
+                { name: 'NoobMaster', cls: 'rb-user-noob', text: 'Раш меня задел :(' },
+                { name: 'LighterGuy', cls: 'rb-user-pro', text: 'Нашел золотой ключ от комнаты!' }
+            ];
+        } else if (rbGameType === 'tower') {
+            chatSamples = [
+                { name: 'TowerGod', cls: 'rb-user-pro', text: 'Speed Coil + Gravity Coil = легкая победа' },
+                { name: 'NoobMaster', cls: 'rb-user-noob', text: 'Синие лазеры такие быстрые...' },
+                { name: 'ParkourKing', cls: 'rb-user-pro', text: 'Я почти у фиолетовых блоков!' },
+                { name: 'Bacon_Boy2012', cls: 'rb-user-bacon', text: 'Упал с желтого этажа :(' }
+            ];
+        } else if (rbGameType === 'disaster') {
+            chatSamples = [
+                { name: 'SurvivePro', cls: 'rb-user-pro', text: 'Залезайте на крышу вышки от цунами!' },
+                { name: 'Bacon_Boy2012', cls: 'rb-user-bacon', text: 'Метеорит снес половину стены хаха' },
+                { name: 'AppleEater', cls: 'rb-user-noob', text: 'Ешьте зеленые яблоки для лечения (+35 HP)' },
+                { name: 'DisasterKing', cls: 'rb-user-pro', text: 'Прячьтесь в доме во время кислотного дождя!' }
+            ];
+        } else {
+            chatSamples = [
+                { name: 'Bacon_Boy2012', cls: 'rb-user-bacon', text: 'Этот прыжок сложный!' },
+                { name: 'NoobMaster', cls: 'rb-user-noob', text: 'oof' },
+                { name: 'Pro_Builder', cls: 'rb-user-pro', text: 'Возьмите Speed Coil на 3 этапе!' }
+            ];
+        }
         var s = chatSamples[Math.floor(Math.random() * chatSamples.length)];
         addRobloxChatMessage(s, s.text);
     }
 
-    // 1. UPDATE PHYSICS
-    if (!rbPlayer.isDead && !rbInGameMenuOpen) {
-        var moveSpeed = rbPlayer.hasSpeedCoil ? 5.8 : 3.8;
+    // 1. UPDATE GAME TYPE MECHANICS
+    // A) DOORS: Rush Monster Event
+    if (rbGameType === 'doors') {
+        rbRushTimer += dt;
+        if (rbRushTimer > 14.0 && !rbRushActive && rbRushFlicker <= 0) {
+            rbRushTimer = 0;
+            rbRushFlicker = 3.0; // 3 seconds light flicker warning
+            playRobloxSiren();
+            addRobloxChatMessage('system', '⚠️ СВЕТ МИГАЕТ! Rush приближается! ПРЯЧЬТЕСЬ В ШКАФ [F]!');
+        }
+
+        if (rbRushFlicker > 0) {
+            rbRushFlicker -= dt;
+            if (rbRushFlicker <= 0) {
+                rbRushActive = true;
+                rbRushX = rbPlayer.x + 650;
+                playRushRoar();
+            }
+        }
+
+        if (rbRushActive) {
+            rbRushX -= 18.0;
+
+            if (Math.abs(rbPlayer.x + rbPlayer.w/2 - rbRushX) < 45) {
+                if (!rbInCloset && !rbPlayer.isDead) {
+                    killRobloxAvatar('Rush настиг вас в коридоре!');
+                }
+            }
+
+            if (rbRushX < rbPlayer.x - 500) {
+                rbRushActive = false;
+                if (!rbPlayer.isDead) {
+                    rbDoorKnobs += 50;
+                    playRobloxCoin();
+                    addRobloxChatMessage('system', '✅ Rush пронесся мимо! Вы выжили в шкафу! +50 Ручек');
+                    updateRobloxHUD();
+                }
+            }
+        }
+    }
+    // B) Tower of Hell: Lasers & Timer
+    else if (rbGameType === 'tower') {
+        rbTowerTimer = Math.max(0, rbTowerTimer - dt);
+        for (var lz = 0; lz < rbLasers.length; lz++) {
+            rbLasers[lz].angle += rbLasers[lz].speed * dt;
+        }
+        for (var mp = 0; mp < rbPlatforms.length; mp++) {
+            var mPlat = rbPlatforms[mp];
+            if (mPlat.isMoving) {
+                mPlat.x += mPlat.dir * mPlat.speed;
+                if (mPlat.x > mPlat.maxX) { mPlat.x = mPlat.maxX; mPlat.dir = -1; }
+                if (mPlat.x < mPlat.minX) { mPlat.x = mPlat.minX; mPlat.dir = 1; }
+            }
+        }
+    }
+    // C) Natural Disaster Survival
+    else if (rbGameType === 'disaster') {
+        rbDisasterTimer -= dt;
+        if (rbDisasterTimer <= 0) {
+            if (rbDisasterType === 'none') {
+                var disasters = ['meteors', 'tsunami', 'acid', 'volcano'];
+                rbDisasterType = disasters[Math.floor(Math.random() * disasters.length)];
+                rbDisasterTimer = 22.0;
+                playRobloxSiren();
+
+                if (rbDisasterType === 'meteors') {
+                    rbDisasterWarning = '☄️ МЕТЕОРИТНЫЙ ДОЖДЬ! Уворачивайтесь от красных меток на земле!';
+                } else if (rbDisasterType === 'tsunami') {
+                    rbDisasterWarning = '🌊 ЦУНАМИ! Поднимитесь на крышу дома или вышку!';
+                    rbTsunamiY = 330;
+                } else if (rbDisasterType === 'acid') {
+                    rbDisasterWarning = '🧪 КИСЛОТНЫЙ ДОЖДЬ! Спрячьтесь внутри дома под крышей!';
+                } else if (rbDisasterType === 'volcano') {
+                    rbDisasterWarning = '🌋 ИЗВЕРЖЕНИЕ ВУЛКАНА! Уворачивайтесь от раскаленной лавы!';
+                }
+                addRobloxChatMessage('system', rbDisasterWarning);
+            } else {
+                if (!rbPlayer.isDead) {
+                    rbSurvivalsCount++;
+                    rbRobux += 500;
+                    playRobloxWin();
+                    addRobloxChatMessage('system', '🎉 ВЫ ВЫЖИЛИ В БЕДСТВИИ! Получено +500 Robux!');
+                }
+                rbDisasterType = 'none';
+                rbDisasterTimer = 7.0;
+                rbDisasterWarning = 'Ожидание следующего бедствия...';
+                rbMeteors = [];
+                rbAcidDrops = [];
+                rbTsunamiY = 330;
+            }
+            updateRobloxHUD();
+        }
+
+        if (rbDisasterType === 'meteors') {
+            if (Math.random() < 0.08) {
+                var tx = rbPlayer.x + (Math.random() - 0.5) * 500;
+                rbMeteors.push({
+                    x: tx + 80,
+                    y: -40,
+                    targetX: tx,
+                    targetY: 260,
+                    timer: 1.2,
+                    exploded: false
+                });
+            }
+            for (var mIdx = 0; mIdx < rbMeteors.length; mIdx++) {
+                var met = rbMeteors[mIdx];
+                met.timer -= dt;
+                met.x += (met.targetX - met.x) * 0.08;
+                met.y += (met.targetY - met.y) * 0.08;
+                if (met.timer <= 0 && !met.exploded) {
+                    met.exploded = true;
+                    if (Math.abs(rbPlayer.x + rbPlayer.w/2 - met.targetX) < 45 && rbPlayer.y > 200) {
+                        rbPlayer.health -= 45;
+                        playRobloxOof();
+                        updateRobloxHUD();
+                        if (rbPlayer.health <= 0) killRobloxAvatar('Метеоритный удар');
+                    }
+                }
+            }
+            rbMeteors = rbMeteors.filter(function(m) { return m.timer > -0.8; });
+        } else if (rbDisasterType === 'tsunami') {
+            if (rbTsunamiY > 175) rbTsunamiY -= 0.6;
+            if (rbPlayer.y + rbPlayer.h > rbTsunamiY && !rbPlayer.isDead) {
+                rbPlayer.health -= 0.7;
+                updateRobloxHUD();
+                if (rbPlayer.health <= 0) killRobloxAvatar('Утонул в цунами');
+            }
+        } else if (rbDisasterType === 'acid') {
+            if (Math.random() < 0.3) {
+                rbAcidDrops.push({ x: rbPlayer.x + (Math.random() - 0.5) * 600, y: 0, vy: 7 });
+            }
+            for (var ad = 0; ad < rbAcidDrops.length; ad++) {
+                rbAcidDrops[ad].y += rbAcidDrops[ad].vy;
+            }
+            rbAcidDrops = rbAcidDrops.filter(function(d) { return d.y < 350; });
+            var isSheltered = (rbPlayer.x > 300 && rbPlayer.x < 590 && rbPlayer.y > 115);
+            if (!isSheltered && !rbPlayer.isDead) {
+                rbPlayer.health -= 0.25;
+                updateRobloxHUD();
+                if (rbPlayer.health <= 0) killRobloxAvatar('Кислотный дождь');
+            }
+        }
+    }
+
+    // 2. UPDATE PLAYER PHYSICS
+    if (!rbPlayer.isDead && !rbInGameMenuOpen && !rbInCloset) {
+        var moveSpeed = rbPlayer.hasSpeedCoil ? 6.8 : 3.8;
         if (rbKeys.left) {
             rbPlayer.vx = -moveSpeed;
             rbPlayer.facingRight = false;
@@ -3516,42 +4166,110 @@ function robloxGameLoop() {
         for (var p = 0; p < rbPlatforms.length; p++) {
             var plat = rbPlatforms[p];
 
-            // If fading glass platform, check opacity
             if (plat.isGlass) {
                 plat.fade = (plat.fade + dt * 2.0) % 3.0;
-                if (plat.fade > 1.8) continue; // Intangible when invisible!
+                if (plat.fade > 1.8) continue;
             }
 
-            // Check if player lands on top
             if (rbPlayer.x + pw > plat.x && rbPlayer.x < plat.x + plat.w) {
                 if (rbPlayer.y + ph >= plat.y && rbPlayer.y + ph - rbPlayer.vy <= plat.y + 12) {
                     rbPlayer.y = plat.y - ph;
                     rbPlayer.vy = 0;
                     rbPlayer.onGround = true;
 
-                    // Speed coil pickup on this platform
-                    if (plat.hasCoil && !rbPlayer.hasSpeedCoil) {
+                    if (plat.hasSpeedCoil && !rbPlayer.hasSpeedCoil) {
                         rbPlayer.hasSpeedCoil = true;
                         playRobloxCoin();
-                        addRobloxChatMessage('system', '⚡ Вы подобрали Speed Coil! Скорость увеличена на 50%!');
+                        addRobloxChatMessage('system', '⚡ Speed Coil получен! Скорость бега увеличена на 100%!');
+                    }
+                    if (plat.hasGravityCoil && !rbPlayer.hasGravityCoil) {
+                        rbPlayer.hasGravityCoil = true;
+                        playRobloxCoin();
+                        addRobloxChatMessage('system', '🌀 Gravity Coil получен! Высота прыжка увеличена на 100%!');
                     }
                 }
             }
         }
 
-        // Killbrick Collisions (Lava)
+        // Killbricks / Lava
         for (var k = 0; k < rbKillbricks.length; k++) {
             var kb = rbKillbricks[k];
             if (rbPlayer.x + pw > kb.x && rbPlayer.x < kb.x + kb.w &&
                 rbPlayer.y + ph > kb.y && rbPlayer.y < kb.y + kb.h) {
-                killRobloxAvatar('Лава / Красный блок');
+                killRobloxAvatar(kb.isWater ? 'Падение в океан' : 'Лава / Красный блок');
                 break;
             }
         }
 
-        // Fall into void
+        // Rotating Lasers in Tower of Hell
+        if (rbGameType === 'tower') {
+            for (var l = 0; l < rbLasers.length; l++) {
+                var lsr = rbLasers[l];
+                var px = rbPlayer.x + pw/2;
+                var py = rbPlayer.y + ph/2;
+                var distToCenter = Math.hypot(px - lsr.cx, py - lsr.cy);
+                if (distToCenter < lsr.len) {
+                    var angleDiff = Math.abs((Math.atan2(py - lsr.cy, px - lsr.cx) - lsr.angle + Math.PI * 4) % (Math.PI * 2));
+                    if (angleDiff < 0.25 || Math.abs(angleDiff - Math.PI) < 0.25) {
+                        killRobloxAvatar('Красный лазер башни');
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Fall into bottom void
         if (rbPlayer.y > 360) {
             killRobloxAvatar('Падение в бездну');
+        }
+
+        // DOORS Door opening & keys
+        if (rbGameType === 'doors') {
+            for (var dr = 0; dr < rbDoors.length; dr++) {
+                var dObj = rbDoors[dr];
+                if (Math.abs(rbPlayer.x + pw/2 - dObj.x) < 30) {
+                    if (dObj.isLocked) {
+                        if (rbKeyHeld) {
+                            dObj.isLocked = false;
+                            dObj.opened = true;
+                            rbKeyHeld = false;
+                            playRobloxCoin();
+                            addRobloxChatMessage('system', '🔓 Дверь ' + dObj.num + ' открыта золотым ключом!');
+                            rbPlayer.stage = parseInt(dObj.num, 10) || rbPlayer.stage;
+                            updateRobloxHUD();
+                        }
+                    } else if (!dObj.opened) {
+                        dObj.opened = true;
+                        playRobloxJump();
+                        rbPlayer.stage = parseInt(dObj.num, 10) || rbPlayer.stage;
+                        updateRobloxHUD();
+                    }
+                }
+            }
+        }
+
+        // Coins / Items pickup
+        for (var c = 0; c < rbCoins.length; c++) {
+            var cn = rbCoins[c];
+            if (!cn.taken && Math.abs(rbPlayer.x + pw/2 - cn.x) < 26 && Math.abs(rbPlayer.y + ph/2 - cn.y) < 26) {
+                cn.taken = true;
+                if (cn.isKey) {
+                    rbKeyHeld = true;
+                    playRobloxCoin();
+                    addRobloxChatMessage('system', '🔑 Вы нашли золотой ключ от двери ' + cn.doorNum + '!');
+                } else if (cn.isKnob) {
+                    rbDoorKnobs += 15;
+                    playRobloxCoin();
+                } else if (cn.isApple) {
+                    rbPlayer.health = Math.min(100, rbPlayer.health + 35);
+                    playAppleCrunch();
+                    addRobloxChatMessage('system', '🍏 Вы съели яблоко и восстановили +35 HP!');
+                } else {
+                    rbPlayer.coins++;
+                    playRobloxCoin();
+                }
+                updateRobloxHUD();
+            }
         }
 
         // Checkpoint detection
@@ -3565,46 +4283,33 @@ function robloxGameLoop() {
                     rbPlayer.stage = cpad.stage;
                     playRobloxCoin();
                     updateRobloxHUD();
-                    addRobloxChatMessage('system', '🚩 Чекпоинт этапа ' + cpad.stage + ' активирован!');
+                    addRobloxChatMessage('system', '🚩 Чекпоинт ' + cpad.stage + ' активирован!');
                 }
-            }
-        }
-
-        // Coin collection
-        for (var c = 0; c < rbCoins.length; c++) {
-            var cn = rbCoins[c];
-            if (!cn.taken && Math.abs(rbPlayer.x + pw/2 - cn.x) < 22 && Math.abs(rbPlayer.y + ph/2 - cn.y) < 22) {
-                cn.taken = true;
-                rbPlayer.coins++;
-                playRobloxCoin();
-                updateRobloxHUD();
             }
         }
 
         // Victory Finish Pad detection
         if (rbFinishPad && !rbFinishPad.triggered) {
             if (rbPlayer.x + pw > rbFinishPad.x && rbPlayer.x < rbFinishPad.x + rbFinishPad.w &&
-                rbPlayer.y + ph >= rbFinishPad.y - 10 && rbPlayer.y + ph <= rbFinishPad.y + 15) {
+                rbPlayer.y + ph >= rbFinishPad.y - 12 && rbPlayer.y + ph <= rbFinishPad.y + 15) {
                 rbFinishPad.triggered = true;
-                rbPlayer.stage = 5;
-                rbRobux += 1000;
+                rbRobux += (rbGameType === 'doors' ? 2000 : (rbGameType === 'tower' ? 2500 : 1000));
                 playRobloxWin();
                 updateRobloxHUD();
-                addRobloxChatMessage('system', '🎉 ПОЗДРАВЛЯЕМ! Player_13 прошел Escape The Night Office и получил +1,000 Robux!');
+                addRobloxChatMessage('system', '🎉 ПОЗДРАВЛЯЕМ! Player_13 прошел ' + rbCurrentPlace + ' и победил!');
 
-                // Confetti explosion
-                for (var conf = 0; conf < 45; conf++) {
+                for (var conf = 0; conf < 55; conf++) {
                     rbParticles.push({
                         x: rbPlayer.x + 10,
                         y: rbPlayer.y,
-                        vx: (Math.random() - 0.5) * 12,
+                        vx: (Math.random() - 0.5) * 14,
                         vy: -6 - Math.random() * 8,
-                        w: 5 + Math.random() * 4,
-                        h: 5 + Math.random() * 4,
-                        col: ['#fde047', '#ef4444', '#3b82f6', '#a855f7', '#22c55e'][conf % 5],
+                        w: 5 + Math.random() * 5,
+                        h: 5 + Math.random() * 5,
+                        col: ['#fde047', '#ef4444', '#3b82f6', '#a855f7', '#22c55e', '#ec4899'][conf % 6],
                         rot: Math.random() * Math.PI,
                         vRot: (Math.random() - 0.5) * 0.4,
-                        life: 2.0
+                        life: 2.5
                     });
                 }
             }
@@ -3621,230 +4326,451 @@ function robloxGameLoop() {
     if (cameraX < 0) cameraX = 0;
     if (cameraX > 2700) cameraX = 2700;
 
-    // 2. RENDER ROBLOX SCENE
-    // Skybox: Classic Roblox Blue Sky
-    var skyGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
-    skyGrad.addColorStop(0, '#38bdf8');
-    skyGrad.addColorStop(0.7, '#93c5fd');
-    skyGrad.addColorStop(1, '#dbeafe');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, canvasW, canvasH);
+    // Screen Shake from Rush or Disaster
+    var shakeX = 0;
+    var shakeY = 0;
+    if (rbRushFlicker > 0 || rbRushActive || (rbDisasterType === 'meteors' && Math.random() < 0.2)) {
+        shakeX = (Math.random() - 0.5) * 8;
+        shakeY = (Math.random() - 0.5) * 6;
+    }
 
-    // Parallax Voxel Clouds in background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-    for (var cld = 0; cld < 5; cld++) {
-        var clx = (cld * 220 - cameraX * 0.2) % (canvasW + 200) - 50;
-        ctx.fillRect(clx, 30 + (cld % 2) * 25, 90, 26);
-        ctx.fillRect(clx + 15, 20 + (cld % 2) * 25, 60, 36);
+    // ==================== 2. RENDER SCENE ====================
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
+    // Skybox based on Game Type
+    if (rbGameType === 'doors') {
+        var flickerAlpha = (rbRushFlicker > 0 && Math.sin(rbTime * 35) > 0) ? 0.35 : 0.95;
+        ctx.fillStyle = '#181119';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.fillStyle = 'rgba(46, 27, 44, ' + flickerAlpha + ')';
+        for (var st = 0; st < canvasW; st += 32) {
+            ctx.fillRect(st, 0, 16, canvasH);
+        }
+        ctx.fillStyle = '#2b1612';
+        ctx.fillRect(0, 260, canvasW, 80);
+    } else if (rbGameType === 'tower') {
+        var voidGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
+        voidGrad.addColorStop(0, '#0a0618');
+        voidGrad.addColorStop(1, '#1e113b');
+        ctx.fillStyle = voidGrad;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        for (var st2 = 0; st2 < 25; st2++) {
+            var sx = (st2 * 97) % canvasW;
+            var sy = (st2 * 53) % (canvasH - 80);
+            ctx.fillRect(sx, sy, 2, 2);
+        }
+    } else {
+        var skyGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
+        skyGrad.addColorStop(0, '#38bdf8');
+        skyGrad.addColorStop(0.7, '#93c5fd');
+        skyGrad.addColorStop(1, '#dbeafe');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        for (var cld = 0; cld < 5; cld++) {
+            var clx = (cld * 220 - cameraX * 0.2) % (canvasW + 200) - 50;
+            ctx.fillRect(clx, 30 + (cld % 2) * 25, 90, 26);
+            ctx.fillRect(clx + 15, 20 + (cld % 2) * 25, 60, 36);
+        }
     }
 
     ctx.save();
     ctx.translate(-cameraX, 0);
 
-    // Render Killbricks (Lava) with Neon Glow
-    for (var lk = 0; lk < rbKillbricks.length; lk++) {
-        var lava = rbKillbricks[lk];
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(lava.x, lava.y, lava.w, lava.h);
-        // Neon top pulse line
-        var lavaPulse = Math.sin(tvNewsTime * 8 + lk) > 0 ? '#f87171' : '#ef4444';
-        ctx.fillStyle = lavaPulse;
-        ctx.fillRect(lava.x, lava.y, lava.w, 4);
+    // Natural Disaster Water / Ocean
+    if (rbGameType === 'disaster') {
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(-600, 310, 2600, 80);
     }
 
-    // Render Platforms with signature 3D Roblox Studs!
+    // Render Killbricks (Lava)
+    for (var lk = 0; lk < rbKillbricks.length; lk++) {
+        var lava = rbKillbricks[lk];
+        if (lava.isWater) {
+            ctx.fillStyle = 'rgba(2, 132, 199, 0.85)';
+        } else {
+            ctx.fillStyle = '#dc2626';
+        }
+        ctx.fillRect(lava.x, lava.y, lava.w, lava.h);
+        if (!lava.isWater) {
+            var lavaPulse = Math.sin(rbTime * 8 + lk) > 0 ? '#f87171' : '#ef4444';
+            ctx.fillStyle = lavaPulse;
+            ctx.fillRect(lava.x, lava.y, lava.w, 4);
+        }
+    }
+
+    // Render Platforms with signature Roblox Studs
     for (var pi = 0; pi < rbPlatforms.length; pi++) {
         var plt = rbPlatforms[pi];
-
-        if (plt.isGlass && plt.fade > 1.8) continue; // Invisible glass
+        if (plt.isGlass && plt.fade > 1.8) continue;
 
         ctx.fillStyle = plt.col;
         if (plt.isGlass) {
-            ctx.fillStyle = 'rgba(168, 85, 247, ' + (1.0 - (plt.fade / 2.0)) + ')';
+            ctx.fillStyle = 'rgba(168, 85, 247, ' + (1.0 - (plt.fade / 1.8) * 0.7) + ')';
         }
         ctx.fillRect(plt.x, plt.y, plt.w, plt.h);
 
-        // 3D Bevel Edge
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.fillRect(plt.x, plt.y + plt.h - 4, plt.w, 4);
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillRect(plt.x, plt.y, plt.w, 3);
+        // 3D Studs on top of platform
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        for (var stX = plt.x + 6; stX < plt.x + plt.w - 8; stX += 16) {
+            ctx.fillRect(stX, plt.y - 2, 8, 2);
+        }
 
-        // Draw Roblox Studs on top surface (small cylinders)
-        var studStep = 18;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-        for (var st = plt.x + 6; st < plt.x + plt.w - 6; st += studStep) {
+        // Platform label
+        if (plt.label) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(plt.label, plt.x + plt.w / 2, plt.y + 14);
+        }
+
+        // Speed Coil / Gravity Coil icons on platform
+        if (plt.hasSpeedCoil && !rbPlayer.hasSpeedCoil) {
+            ctx.font = '20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚡', plt.x + plt.w / 2, plt.y - 8);
+        }
+        if (plt.hasGravityCoil && !rbPlayer.hasGravityCoil) {
+            ctx.font = '20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🌀', plt.x + plt.w / 2, plt.y - 8);
+        }
+    }
+
+    // A) RENDER DOORS ELEMENTS
+    if (rbGameType === 'doors') {
+        for (var drIdx = 0; drIdx < rbDoors.length; drIdx++) {
+            var dr = rbDoors[drIdx];
+            ctx.fillStyle = '#451a03';
+            ctx.fillRect(dr.x - 2, 195, 36, 65);
+            ctx.fillStyle = dr.opened ? '#1c1917' : (dr.isExit ? '#15803d' : '#78350f');
+            ctx.fillRect(dr.x + 2, 199, 28, 61);
+            ctx.fillStyle = '#fbbf24';
             ctx.beginPath();
-            ctx.arc(st, plt.y - 1, 3.5, 0, Math.PI * 2);
+            ctx.arc(dr.x + 24, 230, 3, 0, Math.PI * 2);
             ctx.fill();
+            ctx.fillStyle = '#fde047';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(dr.num + (dr.isLocked ? ' 🔒' : ''), dr.x + 16, 212);
         }
 
-        // Office props on stage 1
-        if (plt.label === 'Стол 1' || plt.label === 'Стол 2') {
-            // Monitor on desk
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(plt.x + 30, plt.y - 24, 26, 18);
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(plt.x + 32, plt.y - 22, 22, 14);
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(plt.x + 40, plt.y - 6, 6, 6);
+        // Hiding Closets (Шкафы)
+        for (var clIdx = 0; clIdx < rbClosets.length; clIdx++) {
+            var clos = rbClosets[clIdx];
+            var cy = 204;
+            ctx.fillStyle = '#371c14';
+            ctx.fillRect(clos.x, cy, clos.w, clos.h);
+            ctx.strokeStyle = '#1c0f0a';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(clos.x, cy, clos.w, clos.h);
+            ctx.fillStyle = '#5c2c1c';
+            ctx.fillRect(clos.x + 3, cy + 3, clos.w/2 - 4, clos.h - 6);
+            ctx.fillRect(clos.x + clos.w/2 + 1, cy + 3, clos.w/2 - 4, clos.h - 6);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(clos.x + clos.w/2 - 3, cy + clos.h/2 - 4, 2, 8);
+            ctx.fillRect(clos.x + clos.w/2 + 1, cy + clos.h/2 - 4, 2, 8);
+
+            if (Math.abs(rbPlayer.x + rbPlayer.w/2 - (clos.x + clos.w/2)) < 35 && !rbInCloset) {
+                ctx.fillStyle = '#fde047';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('[F] ШКАФ', clos.x + clos.w/2, cy - 8);
+            }
         }
 
-        // Speed coil item
-        if (plt.hasCoil && !rbPlayer.hasSpeedCoil) {
-            ctx.fillStyle = '#ef4444';
+        // Rush Monster Visual
+        if (rbRushActive) {
+            ctx.save();
+            ctx.fillStyle = '#050505';
+            ctx.beginPath();
+            ctx.arc(rbRushX, 220, 32, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#22d3ee';
+            ctx.beginPath();
+            ctx.arc(rbRushX - 10, 214, 6, 0, Math.PI * 2);
+            ctx.arc(rbRushX + 10, 214, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(rbRushX, 230, 14, 0, Math.PI);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.4)';
+            for (var rPart = 0; rPart < 8; rPart++) {
+                ctx.fillRect(rbRushX + 25 + Math.random() * 30, 200 + Math.random() * 40, 6, 6);
+            }
+            ctx.restore();
+        }
+    }
+    // B) RENDER TOWER OF HELL ELEMENTS
+    else if (rbGameType === 'tower') {
+        for (var lz2 = 0; lz2 < rbLasers.length; lz2++) {
+            var las = rbLasers[lz2];
+            var lx2 = las.cx + Math.cos(las.angle) * las.len;
+            var ly2 = las.cy + Math.sin(las.angle) * las.len;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(las.cx, las.cy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(las.cx, las.cy);
+            ctx.lineTo(lx2, ly2);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(las.cx, las.cy);
+            ctx.lineTo(lx2, ly2);
+            ctx.stroke();
+        }
+    }
+    // C) RENDER NATURAL DISASTER SURVIVAL ELEMENTS
+    else if (rbGameType === 'disaster') {
+        ctx.fillStyle = '#7f1d1d';
+        ctx.fillRect(320, 180, 260, 80);
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(420, 215, 30, 45);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(350, 205, 25, 25);
+        ctx.fillRect(520, 205, 25, 25);
+        ctx.fillRect(370, 130, 30, 30);
+        ctx.fillRect(490, 130, 30, 30);
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(880, 260); ctx.lineTo(910, 105);
+        ctx.moveTo(980, 260); ctx.lineTo(950, 105);
+        ctx.stroke();
+
+        if (rbDisasterType === 'meteors') {
+            for (var m2 = 0; m2 < rbMeteors.length; m2++) {
+                var met2 = rbMeteors[m2];
+                if (!met2.exploded) {
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(met2.targetX, met2.targetY, 24, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+                    ctx.fill();
+
+                    ctx.fillStyle = '#f97316';
+                    ctx.beginPath();
+                    ctx.arc(met2.x, met2.y, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fde047';
+                    ctx.beginPath();
+                    ctx.arc(met2.x, met2.y, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = 'rgba(239, 68, 68, ' + (met2.timer + 0.8) + ')';
+                    ctx.beginPath();
+                    ctx.arc(met2.targetX, met2.targetY - 10, 32, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        } else if (rbDisasterType === 'tsunami') {
+            ctx.fillStyle = 'rgba(14, 165, 233, 0.75)';
+            ctx.fillRect(cameraX - 100, rbTsunamiY, canvasW + 200, 360 - rbTsunamiY);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cameraX - 100, rbTsunamiY - 3, canvasW + 200, 5);
+        } else if (rbDisasterType === 'acid') {
+            ctx.fillStyle = '#22c55e';
+            for (var a2 = 0; a2 < rbAcidDrops.length; a2++) {
+                ctx.fillRect(rbAcidDrops[a2].x, rbAcidDrops[a2].y, 2, 7);
+            }
+        }
+    }
+
+    // Render Coins / Keys / Apples / Knobs
+    for (var ci = 0; ci < rbCoins.length; ci++) {
+        var cn2 = rbCoins[ci];
+        if (cn2.taken) continue;
+
+        if (cn2.isKey) {
+            ctx.fillStyle = '#fde047';
             ctx.font = '22px sans-serif';
-            ctx.fillText('⚡', plt.x + 28, plt.y - 6);
+            ctx.textAlign = 'center';
+            ctx.fillText('🔑', cn2.x, cn2.y + Math.sin(rbTime * 6) * 4);
+        } else if (cn2.isKnob) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(cn2.x, cn2.y + Math.sin(rbTime * 5) * 3, 6, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (cn2.isApple) {
+            ctx.font = '20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🍏', cn2.x, cn2.y + Math.sin(rbTime * 4) * 3);
+        } else {
+            var coinY = cn2.y + Math.sin(rbTime * 5 + ci) * 4;
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.arc(cn2.x, coinY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ca8a04';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('R', cn2.x, coinY + 3);
         }
     }
 
-    // Render Checkpoint Pads
-    for (var cpi = 0; cpi < rbCheckpoints.length; cpi++) {
-        var cpPad = rbCheckpoints[cpi];
-        ctx.fillStyle = cpPad.reached ? '#22c55e' : '#eab308';
-        ctx.beginPath();
-        ctx.ellipse(cpPad.x, cpPad.y, 25, 7, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
+    // Render Checkpoints
+    for (var cp2 = 0; cp2 < rbCheckpoints.length; cp2++) {
+        var cpad2 = rbCheckpoints[cp2];
+        ctx.fillStyle = cpad2.reached ? '#22c55e' : '#64748b';
+        ctx.fillRect(cpad2.x - 20, cpad2.y - 4, 40, 5);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('STAGE ' + cpPad.stage, cpPad.x, cpPad.y - 12);
-    }
-
-    // Render Coins (Floating spinning yellow circles)
-    var coinSpin = Math.sin(tvNewsTime * 6);
-    for (var cni = 0; cni < rbCoins.length; cni++) {
-        var coin = rbCoins[cni];
-        if (coin.taken) continue;
-        var coinW = Math.max(2, Math.abs(coinSpin * 9));
-        ctx.fillStyle = '#facc15';
+        ctx.fillRect(cpad2.x - 2, cpad2.y - 30, 3, 26);
+        ctx.fillStyle = cpad2.reached ? '#22c55e' : '#ef4444';
         ctx.beginPath();
-        ctx.ellipse(coin.x, coin.y + Math.sin(tvNewsTime * 4 + cni) * 3, coinW, 9, 0, 0, Math.PI * 2);
+        ctx.moveTo(cpad2.x + 1, cpad2.y - 30);
+        ctx.lineTo(cpad2.x + 18, cpad2.y - 23);
+        ctx.lineTo(cpad2.x + 1, cpad2.y - 16);
         ctx.fill();
-        ctx.strokeStyle = '#ca8a04';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
     }
 
-    // Render Victory Bloxy Trophy on Stage 5
+    // Render Finish Pad
     if (rbFinishPad) {
-        var fx = rbFinishPad.x + 40;
-        var fy = rbFinishPad.y;
-        // Big Golden Trophy 🏆
-        ctx.font = '48px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🏆', fx, fy - 10);
-
-        ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('WINNER LOUNGE', fx, fy - 65);
-
-        // Finish pad carpet
-        ctx.fillStyle = '#10b981';
+        ctx.fillStyle = rbFinishPad.triggered ? '#fbbf24' : '#10b981';
         ctx.fillRect(rbFinishPad.x, rbFinishPad.y, rbFinishPad.w, rbFinishPad.h);
-        ctx.strokeStyle = '#fef08a';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(rbFinishPad.x, rbFinishPad.y, rbFinishPad.w, rbFinishPad.h);
-    }
-
-    // Render Roblox Noob Avatar
-    if (!rbPlayer.isDead) {
-        var px = rbPlayer.x;
-        var py = rbPlayer.y;
-
-        // White Nametag with drop shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Player_13', px + 13, py - 6);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText('Player_13', px + 12, py - 7);
-
-        // Speed coil glow trail
-        if (rbPlayer.hasSpeedCoil) {
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-            ctx.fillRect(px - (rbPlayer.facingRight ? 8 : -8), py + 4, 18, 30);
-        }
-
-        // Head (Yellow)
-        ctx.fillStyle = '#fde047';
-        ctx.fillRect(px + 4, py, 16, 14);
-        // Face (Classic Roblox Smile)
-        ctx.fillStyle = '#0f172a';
-        var eyeDir = rbPlayer.facingRight ? 2 : -2;
-        ctx.fillRect(px + 8 + eyeDir, py + 4, 2, 2);
-        ctx.fillRect(px + 14 + eyeDir, py + 4, 2, 2);
-        ctx.beginPath();
-        ctx.arc(px + 12 + eyeDir, py + 9, 3, 0, Math.PI);
-        ctx.stroke();
-
-        // Torso (Blue)
-        ctx.fillStyle = '#2563eb';
-        ctx.fillRect(px + 4, py + 14, 16, 14);
-        // Classic Roblox Logo 'R' on chest
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px sans-serif';
-        ctx.fillText('R', px + 12, py + 24);
-
-        // Arms (Yellow) - Animated walk or jump pose
-        var armAngle = Math.sin(rbPlayer.walkCycle) * 6;
-        if (!rbPlayer.onGround) armAngle = -10; // raised arms in jump
-        ctx.fillStyle = '#fde047';
-        // Left arm
-        ctx.fillRect(px - 1, py + 15 + armAngle, 5, 12);
-        // Right arm
-        ctx.fillRect(px + 20, py + 15 - armAngle, 5, 12);
-
-        // Legs (Green) - Animated walking steps
-        var legStep = Math.sin(rbPlayer.walkCycle) * 4;
-        ctx.fillStyle = '#16a34a';
-        // Left leg
-        ctx.fillRect(px + 4, py + 28 + legStep, 7, 10);
-        // Right leg
-        ctx.fillRect(px + 13, py + 28 - legStep, 7, 10);
+        ctx.fillText('🏆 WINNER', rbFinishPad.x + rbFinishPad.w/2, rbFinishPad.y - 8);
     }
 
-    // Render Particles (Ragdoll debris & Win confetti)
-    for (var pr = rbParticles.length - 1; pr >= 0; pr--) {
-        var part = rbParticles[pr];
-        part.x += part.vx;
-        part.y += part.vy;
-        part.vy += 0.35;
-        part.rot += part.vRot;
-        part.life -= dt;
+    // Render Particles (Explosions / Confetti)
+    for (var pi2 = rbParticles.length - 1; pi2 >= 0; pi2--) {
+        var prt = rbParticles[pi2];
+        prt.x += prt.vx;
+        prt.y += prt.vy;
+        prt.vy += 0.25;
+        prt.rot += prt.vRot;
+        prt.life -= dt;
 
         ctx.save();
-        ctx.translate(part.x, part.y);
-        ctx.rotate(part.rot);
-        ctx.fillStyle = part.col;
-        ctx.fillRect(-part.w / 2, -part.h / 2, part.w, part.h);
+        ctx.translate(prt.x, prt.y);
+        ctx.rotate(prt.rot);
+        ctx.fillStyle = prt.col;
+        ctx.fillRect(-prt.w/2, -prt.h/2, prt.w, prt.h);
         ctx.restore();
 
-        if (part.life <= 0) rbParticles.splice(pr, 1);
+        if (prt.life <= 0) {
+            rbParticles.splice(pi2, 1);
+        }
     }
 
-    ctx.restore(); // Restore camera translation
+    // Render Roblox Avatar
+    if (!rbPlayer.isDead) {
+        ctx.save();
+        ctx.translate(rbPlayer.x + rbPlayer.w/2, rbPlayer.y + rbPlayer.h/2);
 
-    // 3. UI OVERLAYS ON CANVAS
-    if (rbFinishPad && rbFinishPad.triggered) {
-        // Victory banner
+        if (rbInCloset) {
+            ctx.globalAlpha = 0.35;
+        }
+
+        if (rbPlayer.hasSpeedCoil) {
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, 24, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        if (rbPlayer.hasGravityCoil) {
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, 28, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Torso: Blue
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(-8, -6, 16, 18);
+
+        // Legs: Green with walk cycle
+        var legSwing = Math.sin(rbPlayer.walkCycle) * 4;
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(-8, 12, 6, 12 + (rbPlayer.onGround ? legSwing : 0));
+        ctx.fillRect(2, 12, 6, 12 - (rbPlayer.onGround ? legSwing : 0));
+
+        // Arms: Yellow
+        ctx.fillStyle = '#fde047';
+        var armSwing = Math.sin(rbPlayer.walkCycle) * 5;
+        ctx.fillRect(-12, -4, 4, 14 - (rbPlayer.onGround ? armSwing : 0));
+        ctx.fillRect(8, -4, 4, 14 + (rbPlayer.onGround ? armSwing : 0));
+
+        // Head: Yellow Classic Block
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(-7, -20, 14, 14);
+
+        // Face: Eyes & Smile
+        ctx.fillStyle = '#0f172a';
+        var eyeDir = rbPlayer.facingRight ? 2 : -2;
+        ctx.fillRect(eyeDir - 3, -16, 2, 3);
+        ctx.fillRect(eyeDir + 2, -16, 2, 3);
+        ctx.fillRect(eyeDir - 2, -10, 5, 2);
+
+        // Hair: Classic Brown
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(-8, -22, 16, 4);
+
+        ctx.restore();
+    }
+
+    ctx.restore(); // camera
+    ctx.restore(); // shake
+
+    // Disaster Banner on HUD
+    if (rbGameType === 'disaster') {
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(canvasW / 2 - 200, 40, 400, 75);
+        ctx.fillRect(canvasW / 2 - 180, 8, 360, 26);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(canvasW / 2 - 180, 8, 360, 26);
+
+        ctx.fillStyle = (rbDisasterType !== 'none') ? '#ef4444' : '#fde047';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(rbDisasterWarning, canvasW / 2, 25);
+    }
+
+    // DOORS Closet Hint
+    if (rbGameType === 'doors' && rbInCloset) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        ctx.fillRect(canvasW / 2 - 120, canvasH - 45, 240, 30);
+        ctx.strokeStyle = '#22c55e';
+        ctx.strokeRect(canvasW / 2 - 120, canvasH - 45, 240, 30);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚪 В ШКАФУ [F — ВЫЙТИ]', canvasW / 2, canvasH - 25);
+    }
+
+    // Victory Banner
+    if (rbFinishPad && rbFinishPad.triggered) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.fillRect(canvasW / 2 - 170, 45, 340, 60);
         ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(canvasW / 2 - 200, 40, 400, 75);
+        ctx.lineWidth = 2;
+        ctx.strokeRect(canvasW / 2 - 170, 45, 340, 60);
 
         ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 16px sans-serif';
+        ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🎉 ПОБЕДА! ВЫ ПРОШЛИ ОББИ!', canvasW / 2, 70);
+        ctx.fillText('🎉 ПОБЕДА! ВЫ ПРОШЛИ ПЛЕЙС!', canvasW / 2, 70);
         ctx.fillStyle = '#4ade80';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('+1,000 ROBUX ЗАЧИСЛЕНО НА БАЛАНС!', canvasW / 2, 95);
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('+2,000 ROBUX ЗАЧИСЛЕНО НА БАЛАНС!', canvasW / 2, 92);
     }
 
     // Red screen flash on death
@@ -3859,6 +4785,7 @@ function robloxGameLoop() {
 
     rbAnimId = requestAnimationFrame(robloxGameLoop);
 }
+
 
 
 // 1C helper (neutralized)

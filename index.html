@@ -220,29 +220,35 @@
                         <div id="rb-games-list" class="rb-content">
                             <div class="rb-headline">🔥 Рекомендуемые плейсы (Нажми, чтобы играть!):</div>
                             <div class="rb-cards-grid">
+                                <div class="rb-card" onclick="launchRobloxGame('DOORS: Hotel 13 (Horror)')">
+                                    <div class="rb-card-thumb thumb-doors">🚪</div>
+                                    <div class="rb-card-title">DOORS: Hotel 13 (Хоррор)</div>
+                                    <div class="rb-card-desc">Открывай двери, прячься в шкафах от Rush и выживи!</div>
+                                    <div class="rb-card-meta">⭐ 98% | 👥 182.4K</div>
+                                    <button class="rb-play-badge">▶ ИГРАТЬ</button>
+                                </div>
+                                <div class="rb-card" onclick="launchRobloxGame('Tower of Hell (Rainbow Obby)')">
+                                    <div class="rb-card-thumb thumb-tower">🌈</div>
+                                    <div class="rb-card-title">Tower of Hell (Обби)</div>
+                                    <div class="rb-card-desc">Радужный паркур без чекпоинтов, лазеры и Speed Coil!</div>
+                                    <div class="rb-card-meta">⭐ 96% | 👥 125.1K</div>
+                                    <button class="rb-play-badge">▶ ИГРАТЬ</button>
+                                </div>
+                                <div class="rb-card" onclick="launchRobloxGame('Natural Disaster Survival')">
+                                    <div class="rb-card-thumb thumb-disaster">🌋</div>
+                                    <div class="rb-card-title">Natural Disaster Survival</div>
+                                    <div class="rb-card-desc">Выживи на острове: цунами, метеориты, кислотный дождь!</div>
+                                    <div class="rb-card-meta">⭐ 97% | 👥 94.8K</div>
+                                    <button class="rb-play-badge">▶ ИГРАТЬ</button>
+                                </div>
                                 <div class="rb-card" onclick="launchRobloxGame('Escape The Night Office (Obby)')">
                                     <div class="rb-card-thumb thumb-office">🏢</div>
-                                    <div class="rb-card-title">Escape The Night Office (ОББИ)</div>
-                                    <div class="rb-card-desc">Пройди столы, лаву и метель до победы!</div>
-                                    <div class="rb-card-meta">⭐ 96% | 👥 64.2K игроков</div>
+                                    <div class="rb-card-title">Escape Night Office</div>
+                                    <div class="rb-card-desc">Офисные столы, лава, вентиляция и побег на крышу!</div>
+                                    <div class="rb-card-meta">⭐ 95% | 👥 58.3K</div>
                                     <button class="rb-play-badge">▶ ИГРАТЬ</button>
                                 </div>
-                                <div class="rb-card" onclick="launchRobloxGame('DOORS: Hotel 13 (Horror Obby)')">
-                                    <div class="rb-card-thumb thumb-doors">🚪</div>
-                                    <div class="rb-card-title">DOORS: Hotel 13 (Обби)</div>
-                                    <div class="rb-card-desc">Прыгай через неоновые блоки и выживи!</div>
-                                    <div class="rb-card-meta">⭐ 98% | 👥 148.5K игроков</div>
-                                    <button class="rb-play-badge">▶ ИГРАТЬ</button>
-                                </div>
-                                <div class="rb-card" onclick="launchRobloxGame('Survive The Blizzard Run')">
-                                    <div class="rb-card-thumb thumb-blizzard">❄️</div>
-                                    <div class="rb-card-title">Survive The Blizzard Run</div>
-                                    <div class="rb-card-desc">Скоростной забег по ледяным блокам!</div>
-                                    <div class="rb-card-meta">⭐ 94% | 👥 38.9K игроков</div>
-                                    <button class="rb-play-badge">▶ ИГРАТЬ</button>
-                                </div>
-                            </div>
-                        </div>
+                            </div></div>
                     </div>
 
                     <!-- 2. LOADING MODAL -->
@@ -308,6 +314,7 @@
                                 <button class="rb-ctrl-btn" onmousedown="rbSetKey('left', true)" onmouseup="rbSetKey('left', false)" onmouseleave="rbSetKey('left', false)">◄ Влево (A)</button>
                                 <button class="rb-ctrl-btn" onmousedown="rbSetKey('right', true)" onmouseup="rbSetKey('right', false)" onmouseleave="rbSetKey('right', false)">Вправо (D) ►</button>
                                 <button class="rb-ctrl-btn rb-ctrl-jump" onmousedown="rbTriggerJump()">▲ ПРЫЖОК (ПРОБЕЛ)</button>
+                                <button class="rb-ctrl-btn rb-ctrl-action" onmousedown="rbTriggerAction()">⚡ ДЕЙСТВИЕ (E/F)</button>
                             </div>
                             <div class="rb-ctrl-group">
                                 <button class="rb-ctrl-btn rb-ctrl-reset" onclick="resetRobloxAvatar()">💀 OOF!</button>
