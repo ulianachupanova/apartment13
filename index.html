@@ -363,11 +363,14 @@
                                 <tr><th>Параметр / Статья реестра</th><th>Контрольное число (Значение)</th><th>Примечание для оператора</th></tr>
                             </thead>
                             <tbody>
-                                <tr class="highlight-num-row"><td>1. Регистрационный номер партии:</td><td class="excel-num-val">84920471853</td><td>11-значный номер реестра</td></tr>
-                                <tr class="highlight-num-row"><td>2. Сумма оборота по счетам:</td><td class="excel-num-val">14892045</td><td>Рубли (без копеек)</td></tr>
-                                <tr class="highlight-num-row"><td>3. Контрольный хеш-код сверки:</td><td class="excel-num-val">973160482</td><td>9-значный контрольный хеш</td></tr>
+                                <tr class="highlight-num-row"><td>1. Регистрационный номер партии:</td><td class="excel-num-val" id="excel-num-reg">84920471853</td><td>11-значный номер реестра</td></tr>
+                                <tr class="highlight-num-row"><td>2. Сумма оборота по счетам:</td><td class="excel-num-val" id="excel-num-sum">14892045</td><td>Рубли (без копеек)</td></tr>
+                                <tr class="highlight-num-row"><td>3. Контрольный хеш-код сверки:</td><td class="excel-num-val" id="excel-num-hash">973160482</td><td>9-значный контрольный хеш</td></tr>
                             </tbody>
                         </table>
+                        <div style="margin-top: 8px;">
+                            <button class="excel-btn-refresh" onclick="generateNewWorkNumbers(true)">🔄 Сгенерировать новую партию (Новые числа)</button>
+                        </div>
                         <div class="excel-ledger-tip">ℹ️ Откройте <strong>1С: Предприятие</strong> (желтый значок на рабочем столе) и перепишите эти числа вручную в форму сверки реестра.</div>
                     </div>
                 </div>

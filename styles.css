@@ -2486,6 +2486,22 @@ canvas {
     color: #475569;
 }
 
+.excel-btn-refresh {
+    background: #15803d;
+    color: #ffffff;
+    border: 1px solid #166534;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.excel-btn-refresh:hover {
+    background: #16a34a;
+}
+
 /* ==================== ROBLOX IN-GAME & OBBY STYLES ==================== */
 .rb-card-desc {
     font-size: 11px;

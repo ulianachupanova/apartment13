@@ -143,6 +143,10 @@ var gameState = {
     officeReportSubmitted: false,
     officeReconciliationDone: false,
     officeAttendanceSigned: false,
+    workNumbers: null,
+    pizzaOrdered: false,
+    pizzaEaten: false,
+    pizzaBoxMesh: null,
     stalkerSpawned: false,
     money: 5000,
     cart: [],
@@ -1800,6 +1804,11 @@ var calcPrev = null;
 var calcWaitNext = false;
 
 window.openCompApp = function(appId) {
+    if (appId === 'excel' || appId === 'onec') {
+        if (window.generateNewWorkNumbers) {
+            window.generateNewWorkNumbers(false);
+        }
+    }
     var winId = (appId === 'report' || appId === 'docs') ? 'comp-window' : ('comp-win-' + appId);
     var el = document.getElementById(winId);
     if (!el) return;
@@ -4945,14 +4954,47 @@ function onCompDragEnd() {
         }
     };
 
+    function generateRandomDigits(len) {
+        var str = '' + (Math.floor(Math.random() * 9) + 1);
+        for (var i = 1; i < len; i++) {
+            str += Math.floor(Math.random() * 10);
+        }
+        return str;
+    }
+
+    window.generateNewWorkNumbers = function(forceRefresh) {
+        if (!gameState.workNumbers || forceRefresh) {
+            gameState.workNumbers = {
+                reg: generateRandomDigits(11),
+                sum: generateRandomDigits(8),
+                hash: generateRandomDigits(9)
+            };
+            if (!gameState.officeReconciliationDone) {
+                var inReg = document.getElementById('onec-input-reg'); if (inReg && !inReg.disabled) inReg.value = '';
+                var inSum = document.getElementById('onec-input-sum'); if (inSum && !inSum.disabled) inSum.value = '';
+                var inHash = document.getElementById('onec-input-hash'); if (inHash && !inHash.disabled) inHash.value = '';
+                var statRec = document.getElementById('onec-status-reconcile'); if (statRec) { statRec.textContent = ''; statRec.className = ''; }
+            }
+        }
+        var elReg = document.getElementById('excel-num-reg');
+        var elSum = document.getElementById('excel-num-sum');
+        var elHash = document.getElementById('excel-num-hash');
+        if (elReg) elReg.textContent = gameState.workNumbers.reg;
+        if (elSum) elSum.textContent = gameState.workNumbers.sum;
+        if (elHash) elHash.textContent = gameState.workNumbers.hash;
+    };
+
     window.verifyOneCNumbers = function() {
+        if (!gameState.workNumbers) {
+            window.generateNewWorkNumbers(false);
+        }
         var val1 = (document.getElementById('onec-input-reg').value || '').replace(/\s+/g, '').trim();
         var val2 = (document.getElementById('onec-input-sum').value || '').replace(/\s+/g, '').trim();
         var val3 = (document.getElementById('onec-input-hash').value || '').replace(/\s+/g, '').trim();
 
-        var expected1 = '84920471853';
-        var expected2 = '14892045';
-        var expected3 = '973160482';
+        var expected1 = gameState.workNumbers ? gameState.workNumbers.reg : '84920471853';
+        var expected2 = gameState.workNumbers ? gameState.workNumbers.sum : '14892045';
+        var expected3 = gameState.workNumbers ? gameState.workNumbers.hash : '973160482';
 
         var statusEl = document.getElementById('onec-status-reconcile');
         if (!statusEl) return;
@@ -6428,7 +6470,10 @@ function buildApartment(isReturn) {
         roomLight.intensity = 1.0;
         camera.position.set(0, 1.6, 2.0);
         camera.lookAt(0, 1.5, 0);
-        setObjective('Закажи пиццу');
+        setObjective('Закажи пиццу по телефону');
+        gameState.pizzaOrdered = false;
+        gameState.pizzaEaten = false;
+        gameState.pizzaBoxMesh = null;
 
         var phone = addMesh(new THREE.BoxGeometry(0.15, 0.02, 0.3), makeMat(0x111111), 1.0, 0.61, -2.6);
         phone.userData = { name: 'Телефон (Заказать пиццу)', type: 'phone' };
@@ -11272,6 +11317,9 @@ function buildOffice() {
     gameState.officeReconciliationDone = false;
     gameState.officeAttendanceSigned = false;
     gameState.computerUsed = false;
+    if (window.generateNewWorkNumbers) {
+        window.generateNewWorkNumbers(true);
+    }
     var inReg = document.getElementById('onec-input-reg'); if (inReg) { inReg.value = ''; inReg.disabled = false; }
     var inSum = document.getElementById('onec-input-sum'); if (inSum) { inSum.value = ''; inSum.disabled = false; }
     var inHash = document.getElementById('onec-input-hash'); if (inHash) { inHash.value = ''; inHash.disabled = false; }
@@ -11694,17 +11742,28 @@ function handleInteraction(obj) {
         if (ch === 5) {
             if (!gameState.pizzaOrdered) {
                 gameState.pizzaOrdered = true;
-                showThought('Алло, доставка? Одну пиццу, пожалуйста... Жду.');
+                if (window.playPhoneDialSound) playPhoneDialSound();
+                showThought('Алло, доставка? Одну большую горячую пиццу, пожалуйста... Жду.');
                 setObjective('Жди доставку пиццы');
                 setTimeout(function() {
-                    showThought('Дзинь-дзинь! Пицца приехала!');
-                    var pizzaBox = addMesh(new THREE.BoxGeometry(0.5, 0.05, 0.5), makeMat(0xeeaa55), -2.0, 0.45, -2.05);
-                    pizzaBox.userData = { name: 'Коробка пиццы', type: 'pizza' };
+                    if (gameState.chapter !== 5) return;
+                    if (window.playKnock) playKnock();
+                    showThought('Дзинь-дзинь! Стук в дверь! Доставка привезла горячую пиццу и аккуратно поставила коробку на стол.');
+                    var pizzaBox = addMesh(new THREE.BoxGeometry(0.50, 0.05, 0.50), makeMat(0xd4a373), -0.60, 0.90, -0.80);
+                    var pizzaLabel = addMesh(new THREE.BoxGeometry(0.36, 0.002, 0.36), makeMat(0xdc2626), 0, 0.026, 0, pizzaBox);
+                    addMesh(new THREE.BoxGeometry(0.26, 0.003, 0.26), makeMat(0xffffff), 0, 0.027, 0, pizzaBox);
+                    addMesh(new THREE.BoxGeometry(0.36, 0.004, 0.05), makeMat(0x16a34a), 0, 0.028, 0, pizzaBox);
+
+                    pizzaBox.userData = { name: 'Горячая пицца (на столе) [F]', type: 'pizza', rootObj: pizzaBox };
+                    pizzaLabel.userData = pizzaBox.userData;
                     interactables.push(pizzaBox);
-                    setObjective('Съешь пиццу');
-                }, 4000);
+                    gameState.pizzaBoxMesh = pizzaBox;
+                    setObjective('Подойди к столу и съешь пиццу');
+                }, 3500);
+            } else if (gameState.pizzaBoxMesh && !gameState.pizzaEaten) {
+                showThought('Пицца уже стоит на столе. Пора поесть!');
             } else {
-                showThought('Я уже заказал пиццу.');
+                showThought('Я уже заказал и съел пиццу.');
             }
         } else if (ch === 6) {
             window.openPhoneUI();
@@ -11779,12 +11838,18 @@ function handleInteraction(obj) {
     }
     else if (d.type === 'pizza') {
         gameState.pizzaEaten = true;
-        scene.remove(obj);
-        interactables.splice(interactables.indexOf(obj), 1);
+        if (window.playItemPickupSound) playItemPickupSound();
+        var targetObj = (d && d.rootObj) ? d.rootObj : (gameState.pizzaBoxMesh || obj);
+        scene.remove(targetObj);
+        var pIdx = interactables.indexOf(targetObj);
+        if (pIdx !== -1) interactables.splice(pIdx, 1);
+        var pIdx2 = interactables.indexOf(obj);
+        if (pIdx2 !== -1 && pIdx2 !== pIdx) interactables.splice(pIdx2, 1);
+        gameState.pizzaBoxMesh = null;
         currentInteractable = null;
         interactionPrompt.style.opacity = 0;
-        showThought('Очень вкусно. Теперь я сыт и хочу спать.');
-        setObjective('Ложись спать');
+        showThought('М-м-м, горячая пицца с хрустящей корочкой и расплавленным сыром! Очень вкусно. Теперь я сыт и могу лечь спать.');
+        setObjective('Ложись в кровать спать');
     }
     else if (d.type === 'bed') {
         if (ch === 5) {
@@ -11794,7 +11859,7 @@ function handleInteraction(obj) {
                     loadChapter(6);
                 });
             } else {
-                showThought('Я слишком голоден, чтобы спать. Надо заказать пиццу.');
+                showThought('Я слишком голоден, чтобы спать. Надо заказать пиццу по телефону и поесть за столом.');
             }
         } else if (ch === 8) {
             if (!gameState.newsWatched8) {
@@ -12367,6 +12432,10 @@ function init() {
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    if (window.generateNewWorkNumbers) {
+        window.generateNewWorkNumbers(false);
+    }
 }
 
 // ==================== ANIMATE ====================
